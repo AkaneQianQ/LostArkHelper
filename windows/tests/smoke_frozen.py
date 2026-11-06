@@ -36,7 +36,8 @@ def main():
         env = os.environ.copy()
         env['LOCALAPPDATA'] = tmp
         # 仅保留系统命令目录：冻结程序不能依赖 Python 安装目录。
-        env['PATH'] = os.pathsep.join([str(Path(env['SystemRoot']) / 'System32'), env['SystemRoot']])
+        system_root = os.environ['SystemRoot']  # os.environ 在 Windows 忽略大小写，普通 dict 不会。
+        env['PATH'] = os.pathsep.join([str(Path(system_root) / 'System32'), system_root])
         proc = subprocess.Popen([str(exe), '--no-browser', '--port', '19845'], env=env, cwd=tmp)
         state_file = Path(tmp) / 'LostArkHelper' / 'instance.json'
         stopped = False
