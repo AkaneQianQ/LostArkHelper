@@ -1,0 +1,33 @@
+name: Build Windows EXE
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Build and test standalone Windows EXE
+        shell: pwsh
+        working-directory: windows
+        run: ./build-windows.ps1 -Mode onefile -PythonExecutable (Get-Command python).Source
+      - name: Prepare download
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path windows/package -Force | Out-Null
+          Copy-Item windows/release/LostArkHelper.exe windows/package/
+          Copy-Item windows/EXE使用说明.md windows/package/README.md
+          $hash = (Get-FileHash windows/package/LostArkHelper.exe -Algorithm SHA256).Hash.ToLower()
+          "$hash  LostArkHelper.exe" | Set-Content -Encoding ascii windows/package/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LostArkHelper-Windows-x64
+          path: windows/package/
+          if-no-files-found: error
+          retention-days: 30
