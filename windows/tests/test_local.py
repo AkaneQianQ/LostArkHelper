@@ -25,6 +25,21 @@ class LocalTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def test_database_closes_on_success_and_error(self):
+        import sqlite3
+        with store.connect(self.root) as db:
+            db.execute("INSERT INTO settings VALUES (1, '{}')")
+        with self.assertRaises(sqlite3.ProgrammingError):
+            db.execute('SELECT 1')
+        with self.assertRaises(RuntimeError):
+            with store.connect(self.root) as rollback_db:
+                rollback_db.execute("UPDATE settings SET value='changed'")
+                raise RuntimeError('abort transaction')
+        with self.assertRaises(sqlite3.ProgrammingError):
+            rollback_db.execute('SELECT 1')
+        with store.connect(self.root) as check:
+            self.assertEqual(check.execute('SELECT value FROM settings').fetchone()[0], '{}')
+
     def test_activity(self):
         self.assertEqual(helper.VERSION, '2611')
         self.assertEqual(set(helper.VERIFIED), {1,2,3,4,5,12,13})
