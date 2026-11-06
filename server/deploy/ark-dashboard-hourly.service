@@ -1,0 +1,25 @@
+[Unit]
+Description=Lost Ark hourly sign-in and verified reward collection
+Wants=network-online.target
+After=network-online.target lostark-dashboard.service
+
+[Service]
+Type=oneshot
+User=lostark-dashboard
+DynamicUser=yes
+StateDirectory=ark-dashboard
+StateDirectoryMode=0700
+Environment=ARK_HELPER_DIR=/var/lib/ark-dashboard
+ExecStart=/usr/bin/python3 /opt/lostark-dashboard/service/automation.py
+TimeoutStartSec=10min
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+

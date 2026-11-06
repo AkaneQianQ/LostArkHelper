@@ -1,0 +1,11 @@
+[Unit]
+Description=Evaluate the dashboard's configurable schedule every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00 Asia/Shanghai
+Persistent=false
+AccuracySec=1s
+Unit=ark-dashboard-hourly.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,7 @@
+{
+  "version": "2611",
+  "server": [1, 2, 3, 4, 5, 12, 13],
+  "windows": [1, 2, 3, 4, 5, 12, 13],
+  "shortcuts": [2, 3, 4, 5, 12, 13],
+  "note": "ID 1 is a documented historical difference; new tasks must update all applicable clients."
+}

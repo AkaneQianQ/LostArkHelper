@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.build-venv/
+build/
+*.spec
+web/node_modules/
+dist/LostArkHelper/

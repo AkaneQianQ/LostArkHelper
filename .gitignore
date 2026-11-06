@@ -1,0 +1,16 @@
+**/__pycache__/
+**/node_modules/
+**/.build-venv/
+**/*.sqlite3
+**/*.dpapi
+**/config-dashboard.json
+**/panel.key
+shortcuts/build/
+windows/release/
+**/.DS_Store
+**/*.pyc
+**/instance.json
+**/service.log*
+**/pending-operation.json
+**/build/
+**/dist-rebuilt/

@@ -1,0 +1,28 @@
+[Unit]
+Description=Lost Ark Companion private dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=ark-dashboard
+StateDirectoryMode=0700
+Environment=ARK_HELPER_DIR=/var/lib/ark-dashboard
+Environment=ARK_MODULE_DIR=/opt/lostark-dashboard/service
+Environment=ARK_STATIC_DIR=/opt/lostark-dashboard/dist
+Environment=ARK_PORT=18745
+ExecStart=/usr/bin/python3 /opt/lostark-dashboard/service/app.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

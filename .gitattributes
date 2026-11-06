@@ -1,0 +1,9 @@
+*.py text eol=lf
+*.pyw text eol=lf
+*.tsx text eol=lf
+*.ts text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.cmd -text
+*.vbs text eol=crlf
+*.shortcut binary
