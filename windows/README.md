@@ -1,3 +1,13 @@
+# Windows 免 Python 单文件版（2026-11-06 更新）
+
+现已可以构建并直接运行 LostArkHelper.exe，使用说明见 EXE使用说明.md。无需 Python，后台运行。升级前停止旧服务，使用原本数据目录；旧版自启记录需要在 exe 版中关闭再开启以更新路径。
+
+GitHub Actions 的 Windows x64 环境中 13 项测试全部通过，含 DPAPI，生成的 EXE 通过隔离 Python PATH 的启动、网页、鉴权、重复启动与安全退出检查。未调用真实游戏 API。默认浏览器打开、Windows 10/11 用户桌面的登录自启需用户验证。
+
+重新构建：Windows 中执行 build-windows.ps1，默认输出 release/LostArkHelper.exe；-Mode onedir 可保留目录构建。下方是先前源码版的历史说明，其中“没有 exe / 未完成 Windows 测试”的描述已被本节更新。
+
+---
+
 # 0.1.2 后台运行版使用说明（优先于下方旧版本说明）
 
 1. 先在旧终端按 Ctrl+C，等待服务停止，再更新文件；不要强行关闭正在领奖的进程。

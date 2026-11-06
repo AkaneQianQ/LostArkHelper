@@ -25,7 +25,7 @@ web 保留现有界面及上游 LICENSE；未引用演示业务已移除，一�
 
 安装 Python 3.11+ 和 py 启动器，解压后双击 windows/启动助手.vbs。后台运行并打开工作台；关闭浏览器不退出，定时设置中可停止服务或设置登录自启。旧服务先停止再升级，已有自启记录应关闭再开启。
 
-Windows 上运行 build-windows.ps1 可构建 windowed exe，输出 release/LostArkHelper；必须分发整个目录。当前包不包含经过实机验证的 exe。详细使用以 windows/README.md 顶部 0.1.2 说明为准，下面保留了版本历史。
+Windows 上运行 build-windows.ps1 可构建 windowed exe，输出 release/LostArkHelper；必须分发整个目录。现已增加 GitHub Actions 的 Windows x64 单文件构建；2026-11-06 的成品运行检查已通过，见下方最新记录。详细使用以 windows/README.md 顶部 0.1.2 说明为准，下面保留了版本历史。
 
 数据在 %LOCALAPPDATA%\LostArkHelper，凭据由当前用户 DPAPI 加密，不随源码迁移。cmd 已采用 CRLF/GBK，默认 VBS 后台启动，调试启动.cmd 保留终端。
 
@@ -57,8 +57,18 @@ python3 -m unittest discover -s shortcuts/tests -v
 ## 验证与已知边界
 
 - 快捷指令统一构建/Apple 签名成功，19 项测试通过；新增小队任务版未在本会话完成手机全流程实测。
-- Windows 12 项测试中 11 通过，Windows DPAPI 测试在 macOS 上跳过。后台 VBS、窗口版 exe、登录自启与退出仍待真实 Windows 验收。
+- 2026-11-06：GitHub Windows Server 2022 x64 环境中 13 项测试全部通过，含真实 DPAPI 和进程锁；单文件 EXE 在移除 Python PATH 后通过启动、鉴权、网页资源、单实例和安全退出检查。个人 Windows 10/11 的默认浏览器弹出及登录自启仍待用户验收。
 - Windows 终端启动修复来自用户提供的 Windows 排查结论，不等同于全部业务测试通过。
 - 服务器后端保持线上原样。发现现有 automation 在某个提交报错后仍可能继续后续候选，未在这次打包中静默修改云端；Windows 版已改为立即停止并持久化待确认状态。后续应单独修复并部署服务器这一差异。
 - 三端未共享运行时锁，避免多个端同时自动操作同一账号。
 - 不含实际账号数据，测试没有触发真实签到/领奖。
+
+## Windows 单文件 EXE（2026-11-06）
+
+GitHub Actions → Build Windows EXE → Run workflow 可重新构建。默认 onefile + windowed，最终用户只需 LostArkHelper.exe，不需要 Python。构建脚本仍支持 -Mode onedir 以便排查打包问题。
+
+构建代码提交：5e44439。已通过的构建与成品检查：https://github.com/youboRepo/LostArkHelper/actions/runs/42238450932 。Actions 产物默认保留 30 天，过期后可重建。
+
+本轮 Windows 测试发现 SQLite 的 with 语句只提交/回滚、不关闭连接，已在本地版 store.connect 中显式关闭，并加入事务成功/异常都关闭的测试。未修改服务器代码。
+
+查看 windows/EXE使用说明.md。升级前先停止旧服务；同一个 Windows 用户下数据目录保持不变。二进制无商业代码签名，不含真实账号和游戏凭据，检查未执行真实游戏操作。
