@@ -1,15 +1,15 @@
 # 命运方舟助手
 
-v0.3.0，活动版本 2611。包含服务器、Windows 本地版、Linux 本地版及 iPhone 单快捷指令。Windows/Linux 解压即可运行，无需安装 Python，也无需注册助手账号；服务器版保留多用户登录和独立计划。
+v0.3.1，活动版本 2611。包含服务器、Windows 本地版、Linux 本地版及 iPhone 单快捷指令。Windows/Linux 解压即可运行，无需安装 Python，也无需注册助手账号；服务器版保留多用户登录和独立计划。
 
 从 [GitHub Releases](https://github.com/youboRepo/LostArkHelper/releases) 下载：
 
 | 版本 | 下载文件 | 使用方式 |
 | --- | --- | --- |
-| Windows x64 | LostArkHelper-Windows-x64-v0.3.0.zip | 完整解压，双击目录中的 LostArkHelper.exe |
-| Linux x64 | LostArkHelper-Linux-x64-v0.3.0.tar.gz | 解压，运行 ./start.sh，浏览器打开工作台 |
-| 服务器 | LostArkHelper-Server-v0.3.0.tar.gz | Python 服务源码、网页成品及 systemd 单元，见包内 README |
-| iPhone | LostArkHelper-iPhone-v0.3.0.shortcut | 在 iPhone 上下载并用快捷指令 App 导入 |
+| Windows x64 | LostArkHelper-Windows-x64-v0.3.1.zip | 完整解压，双击目录中的 LostArkHelper.exe |
+| Linux x64 | LostArkHelper-Linux-x64-v0.3.1.tar.gz | 解压，运行 ./start.sh，浏览器打开工作台 |
+| 服务器 | LostArkHelper-Server-v0.3.1.tar.gz | Python 服务源码、网页成品及 systemd 单元，见包内 README |
+| iPhone | LostArkHelper-iPhone-v0.3.1.shortcut | 在 iPhone 上下载并用快捷指令 App 导入 |
 
 Windows/Linux 服务保持后台运行；关闭网页不退出，可在工作台停止。Windows 在工作台设置用户登录自启；Linux 使用安装脚本配置 systemd 用户服务。Linux 成品在 Ubuntu 22.04 x64 构建，需要 glibc 2.35+，不适用于 Alpine/musl 或 ARM。
 
@@ -19,7 +19,7 @@ Windows/Linux 打包版进入“定时设置 → 版本更新”，点击“检�
 
 更新只替换程序目录，不替换用户目录里的游戏凭据、定时计划和历史记录。旧程序目录保留为同级的 `.previous` 目录。存在待确认的游戏操作时拒绝更新；下载和重启期间持有操作锁并暂停新的游戏操作。成功后旧网页会话失效，Windows 再双击一次启动器打开工作台；Linux 执行 `./open-workbench.sh` 获取新链接。
 
-v0.2.0 需要先手动升级至 v0.3.0，之后才能使用此功能。源码运行模式不能在网页替换源码；继续使用 Git 或下载 Release 更新。更新信任项目的 GitHub Release 和 SHA256 清单，不提供独立代码签名。
+v0.2.0 需要先手动升级至带更新入口的版本，之后才能使用此功能。源码运行模式不能在网页替换源码；继续使用 Git 或下载 Release 更新。更新信任项目的 GitHub Release 和 SHA256 清单，不提供独立代码签名。
 
 ## 自动处理哪些任务
 

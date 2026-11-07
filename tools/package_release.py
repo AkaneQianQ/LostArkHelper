@@ -12,6 +12,12 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def normalize_server_modes(stage):
+    """Keep the DynamicUser service able to read packaged program files."""
+    for path in (stage, *stage.rglob('*')):
+        path.chmod(0o755 if path.is_dir() else 0o644)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('edition', choices=['server', 'windows', 'linux'])
@@ -33,6 +39,10 @@ def main():
                 target = stage / Path(relative).relative_to('server')
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, target)
+            # Git does not reliably preserve a host file's read bits in a tar.
+            # The server runs as a systemd DynamicUser, so every packaged
+            # directory must be traversable and every file world-readable.
+            normalize_server_modes(stage)
         else:
             source = ROOT / args.edition / 'release' / (
                 'LostArkHelper' if args.edition == 'windows' else 'LostArkHelper-Linux-x64')

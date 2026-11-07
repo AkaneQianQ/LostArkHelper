@@ -1,10 +1,17 @@
-# 命运方舟助手 · 服务器版 v0.2.0
+# 命运方舟助手 · 服务器版 v0.3.1
 
 多用户网页服务，账号、凭据、计划、运行历史按用户隔离。此包包含 Python 后端、已构建网页、前端源码、测试与 systemd 单元。部署机需 Python 3.9+；运行时只使用标准库。
 
 ## 部署
 
-将本目录内容放入 /opt/lostark-dashboard；服务只监听 127.0.0.1:18745。首次启动前在服务器本地创建私有初始化密码文件（不应覆盖已有 panel.key）：
+将本目录内容放入 /opt/lostark-dashboard；服务只监听 127.0.0.1:18745。服务单元使用 systemd `DynamicUser`，程序目录中的文件夹必须可遍历、普通文件必须可读取。Release 压缩包会统一写成目录 `0755`、文件 `0644`；若手工复制文件，部署后还要执行：
+
+```bash
+sudo find /opt/lostark-dashboard -type d -exec chmod 0755 {} +
+sudo find /opt/lostark-dashboard -type f -exec chmod 0644 {} +
+```
+
+首次启动前在服务器本地创建私有初始化密码文件（不应覆盖已有 panel.key）：
 
 ```bash
 sudo install -d -m 700 /var/lib/ark-dashboard

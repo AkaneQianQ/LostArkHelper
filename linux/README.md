@@ -5,8 +5,8 @@
 ## 解压和运行
 
 ```sh
-tar -xzf LostArkHelper-Linux-x64-v0.3.0.tar.gz
-cd LostArkHelper-Linux-x64-v0.3.0
+tar -xzf LostArkHelper-Linux-x64-v0.3.1.tar.gz
+cd LostArkHelper-Linux-x64-v0.3.1
 ./start.sh
 ```
 
@@ -51,7 +51,7 @@ ssh -N -L 18745:127.0.0.1:18745 用户名@Linux地址
 
 进入“定时设置 → 版本更新”，点击检查更新；发现新版后确认安装。程序下载 `youboRepo/LostArkHelper` 的正式 Release，核对发布页及包内 SHA256，旧服务完全退出后替换目录并启动新版。数据和历史在独立用户目录中保留，旧目录保留为同级的 `.previous` 目录。
 
-更新后旧会话失效，执行 `./open-workbench.sh` 获取新的工作台链接；systemd 用户服务仍指向原目录，不需要重新安装。网页手动停止后的 systemd 行为与原来一致。v0.2.0 需先手动升级到 v0.3.0；源码运行版继续使用 Git 或手动下载。存在待确认游戏操作时会拒绝更新。
+更新后旧会话失效，执行 `./open-workbench.sh` 获取新的工作台链接；systemd 用户服务仍指向原目录，不需要重新安装。网页手动停止后的 systemd 行为与原来一致。v0.2.0 需先手动升级到带网页更新入口的版本；源码运行版继续使用 Git 或手动下载。存在待确认游戏操作时会拒绝更新。
 
 ## 从源码构建
 

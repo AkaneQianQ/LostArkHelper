@@ -30,6 +30,13 @@ def main():
                 members = stream.getmembers()
                 assert not any(m.issym() or m.islnk() for m in members), 'Unexpected archive links'
                 files = {m.name: stream.extractfile(m).read() for m in members if m.isfile()}
+                if '-Server-' in name:
+                    # The systemd unit uses DynamicUser. Files copied from a
+                    # developer machine must not retain private read modes.
+                    for member in members:
+                        assert member.mode & 0o444 == 0o444, f'Server archive member is not readable: {member.name}'
+                        if member.isdir():
+                            assert member.mode & 0o111 == 0o111, f'Server archive directory is not traversable: {member.name}'
         assert len({n.split('/')[0] for n in files}) == 1, 'Expected one top-level directory'
         for filename in files:
             assert not filename.startswith('/') and '..' not in Path(filename).parts
