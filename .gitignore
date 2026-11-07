@@ -21,3 +21,7 @@ release-assets/
 **/*.spec
 **/credentials.enc
 **/credentials.key
+windows/VERSION
+linux/VERSION
+**/update-download.*
+**/update-helper/

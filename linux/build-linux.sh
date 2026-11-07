@@ -6,10 +6,12 @@ cd "$(dirname "$0")"
   echo '请在 Ubuntu 22.04 x86_64（或兼容环境）构建。' >&2; exit 1;
 }
 PYTHON="${PYTHON:-python3}"
+[[ -f "$PWD/../VERSION" ]] || { echo '缺少源码根目录 VERSION。' >&2; exit 1; }
 # CI 在调用前安装 requirements-build.txt；此处不修改调用者的 Python 环境。
-"$PYTHON" -m unittest discover -s tests -p 'test_local.py' -v
+"$PYTHON" -m unittest discover -s tests -v
+cp "$PWD/../VERSION" "$PWD/VERSION"
 "$PYTHON" -m PyInstaller --noconfirm --clean --onefile --name LostArkHelper \
-  --paths "$PWD/service" --add-data "$PWD/dist:dist" --add-data "$PWD/service/activity.json:service" \
+  --paths "$PWD/service" --add-data "$PWD/dist:dist" --add-data "$PWD/service/activity.json:service" --add-data "$PWD/VERSION:." \
   --distpath build/bin --workpath build/pyinstaller --specpath build "$PWD/launcher.py"
 PACKAGE=release/LostArkHelper-Linux-x64
 mkdir -p "$PACKAGE"

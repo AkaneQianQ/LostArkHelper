@@ -16,6 +16,7 @@ import credentials
 import helper
 import scheduler
 import store
+import updater
 from http.server import ThreadingHTTPServer
 
 class LocalTests(unittest.TestCase):

@@ -63,6 +63,21 @@ def main():
             cookie = headers['Set-Cookie'].split(';')[0]
             status, _, data = request(port, '/api/status', cookie=cookie)
             assert status == 200 and not json.loads(data)['configured']
+            status, _, data = request(port, '/api/local/update', cookie=cookie)
+            update = json.loads(data)
+            assert status == 200 and update['supported'] and re.fullmatch(r'v\d+\.\d+\.\d+', update['current_version'])
+            assert request(port, '/api/local/update', method='POST', body='{"check":true}')[0] == 401
+            status, _, data = request(port, '/api/local/update', method='POST', body='{"check":true}', cookie=cookie)
+            assert status == 202
+            deadline = time.monotonic() + 45
+            while time.monotonic() < deadline:
+                status, _, data = request(port, '/api/local/update', cookie=cookie)
+                update = json.loads(data)
+                if update['status'] != 'checking':
+                    break
+                time.sleep(0.5)
+            assert status == 200 and update['status'] == 'ready', 'GitHub release check failed'
+            assert update['latest_version'] and update['release_url'].startswith('https://github.com/youboRepo/LostArkHelper/releases/')
             # 网页与 JS/CSS 必须真正打包进去，不能只验证端口开放。
             status, _, page = request(port, '/')
             assert status == 200
@@ -85,7 +100,7 @@ def main():
             assert proc.wait(timeout=30) == 0
             stopped = True
             assert not state_file.exists(), 'Instance file should be removed on clean exit'
-            print('Linux binary smoke passed: startup, auth, bundled frontend, single instance, safe shutdown; no game requests.')
+            print('Linux binary smoke passed: startup, auth, frontend, single instance, GitHub update check, safe shutdown; no game requests.')
         finally:
             if not stopped and proc.poll() is None:
                 proc.terminate()

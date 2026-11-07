@@ -5,8 +5,8 @@
 ## 解压和运行
 
 ```sh
-tar -xzf LostArkHelper-Linux-x64-v0.2.0.tar.gz
-cd LostArkHelper-Linux-x64-v0.2.0
+tar -xzf LostArkHelper-Linux-x64-v0.3.0.tar.gz
+cd LostArkHelper-Linux-x64-v0.3.0
 ./start.sh
 ```
 
@@ -46,6 +46,12 @@ ssh -N -L 18745:127.0.0.1:18745 用户名@Linux地址
 数据在 `${XDG_DATA_HOME:-~/.local/share}/LostArkHelper`，目录权限 `700`；凭据使用 Fernet 加密存入 `credentials.enc`，密钥文件 `credentials.key` 与密文均为 `600`。不依赖桌面密钥环，因此无桌面 Linux 也能运行。密钥和密文保存在同一用户目录：这不能抵御同一用户、root 或整个数据目录被复制后的访问。备份时按敏感信息处理整个目录，不要上传 GitHub。
 
 `automation.sqlite3` 保存计划和脱敏历史；`instance.json` 保存当前随机本机会话；`service.log` 保存脚本启动日志。升级时先安全停止，替换解压目录内的程序和脚本，保留用户数据目录，再启动。删除程序目录不会删除数据。丢失密钥后原密文无法恢复，需要重新导入。
+
+### v0.3.0 起的网页更新
+
+进入“定时设置 → 版本更新”，点击检查更新；发现新版后确认安装。程序下载 `youboRepo/LostArkHelper` 的正式 Release，核对发布页及包内 SHA256，旧服务完全退出后替换目录并启动新版。数据和历史在独立用户目录中保留，旧目录保留为同级的 `.previous` 目录。
+
+更新后旧会话失效，执行 `./open-workbench.sh` 获取新的工作台链接；systemd 用户服务仍指向原目录，不需要重新安装。网页手动停止后的 systemd 行为与原来一致。v0.2.0 需先手动升级到 v0.3.0；源码运行版继续使用 Git 或手动下载。存在待确认游戏操作时会拒绝更新。
 
 ## 从源码构建
 

@@ -16,6 +16,7 @@ import credentials
 import autostart
 import hmac
 import import_link as importer
+import updater
 
 ROOT = Path(os.environ.get('ARK_HELPER_DIR', '/var/lib/ark-dashboard'))
 STATIC = Path(os.environ.get('ARK_STATIC_DIR', '/opt/lostark-dashboard/dist'))
@@ -127,6 +128,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(200, autostart.state())
                 except OSError:
                     return self.reply(500, {'error': '无法读取 Windows 自启设置，请检查当前用户的权限。'})
+            if path == '/api/local/update':
+                return self.reply(200, updater.state())
             if path == '/api/schedule':
                 value = store.settings(root)
                 return self.reply(200, dict(value, timezone='Asia/Shanghai', next_run=store.next_run(value)))
@@ -189,6 +192,17 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(200, {'message': '正在停止服务，并等待已开始的操作完成。再次双击启动器可重新打开。'})
             REQUEST_STOP()
             return
+        if path == '/api/local/update':
+            try:
+                if obj == {'check': True}:
+                    updater.start()
+                    return self.reply(202, dict(updater.state(), message='正在检查 GitHub 最新版本。'))
+                if obj == {'install': True}:
+                    updater.start(install=True)
+                    return self.reply(202, dict(updater.state(), message='正在下载更新，请勿关闭电脑。'))
+                return self.reply(400, {'error': '请选择检查或安装更新。'})
+            except (RuntimeError, ValueError) as exc:
+                return self.reply(409, {'error': updater.error_result(exc)})
         if path == '/api/local/autostart':
             if set(obj) != {'enabled'} or type(obj['enabled']) is not bool:
                 return self.reply(400, {'error': '自启设置无效。'})

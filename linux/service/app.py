@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Linux standalone dashboard with local encrypted game credentials."""
 import json
+import updater
 import os
 import secrets
 from http.cookies import SimpleCookie
@@ -127,6 +128,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply(200, autostart.state())
                 except OSError:
                     return self.reply(500, {'error': '无法读取 Linux 自启设置，请使用随包的 systemd 用户服务脚本。'})
+            if path == '/api/local/update':
+                return self.reply(200, updater.state())
             if path == '/api/schedule':
                 value = store.settings(root)
                 return self.reply(200, dict(value, timezone='Asia/Shanghai', next_run=store.next_run(value)))
@@ -189,6 +192,17 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(200, {'message': '正在停止服务，并等待已开始的操作完成。再次运行 start.sh 可重新打开。'})
             REQUEST_STOP()
             return
+        if path == '/api/local/update':
+            try:
+                if obj == {'check': True}:
+                    updater.start()
+                    return self.reply(202, dict(updater.state(), message='正在检查 GitHub 最新版本。'))
+                if obj == {'install': True}:
+                    updater.start(install=True)
+                    return self.reply(202, dict(updater.state(), message='正在下载更新，请勿关闭电脑。'))
+                return self.reply(400, {'error': '请选择检查或安装更新。'})
+            except (RuntimeError, ValueError) as exc:
+                return self.reply(409, {'error': updater.error_result(exc)})
         if path == '/api/local/autostart':
             if set(obj) != {'enabled'} or type(obj['enabled']) is not bool:
                 return self.reply(400, {'error': '自启设置无效。'})

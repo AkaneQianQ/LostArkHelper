@@ -7,6 +7,7 @@ import secrets
 import signal
 import sys
 import threading
+import time
 import urllib.request
 import webbrowser
 from http.server import ThreadingHTTPServer
@@ -18,6 +19,7 @@ import automation
 import platform_lock
 import scheduler
 import autostart
+import updater
 
 
 # 使用当前 Linux 用户的数据目录，使程序升级和数据保存相互独立。
@@ -78,9 +80,14 @@ def main():
     parser = argparse.ArgumentParser(description='命运方舟助手 Linux 独立本地服务')
     parser.add_argument('--port', type=int, default=18745)
     parser.add_argument('--no-browser', action='store_true')
+    parser.add_argument('--update-worker', nargs=2, help=argparse.SUPPRESS)
     parser.add_argument('--open-url', action='store_true', help='输出当前实例工作台链接，不启动新服务')
     parser.add_argument('--stop', action='store_true', help='通过经过鉴权的本机 API 安全停止实例')
     args = parser.parse_args()
+    if args.update_worker:
+        sys.argv = [sys.argv[0], *args.update_worker]
+        import update_worker
+        return update_worker.main()
     if not 1024 <= args.port <= 65535:
         parser.error('端口需在 1024–65535 之间')
     os.umask(0o077)
