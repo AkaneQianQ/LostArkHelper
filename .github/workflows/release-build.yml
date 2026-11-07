@@ -80,3 +80,33 @@ jobs:
           name: server-archive
           path: release-assets/*.tar.gz
           if-no-files-found: error
+  publish:
+    needs: [windows, linux, server]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-archive'
+          path: release-assets
+          merge-multiple: true
+      - name: Verify archives and publish tested assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          cp "shortcuts/releases/LostArkHelper-iPhone-${RELEASE_VERSION}.shortcut" release-assets/
+          python tools/verify_release.py --version "$RELEASE_VERSION"
+          cp docs/releases/v0.2.0.md release-notes.md
+          printf '\n构建源码：%s。\n\n构建与测试：https://github.com/%s/actions/runs/%s\n' "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> release-notes.md
+          if gh release view "$RELEASE_VERSION" --json isDraft > existing-release.json 2>/dev/null; then
+            python -c "import json; assert json.load(open('existing-release.json'))['isDraft'], 'Published versions cannot be overwritten'"
+          else
+            gh release create "$RELEASE_VERSION" --target "$GITHUB_SHA" --draft --title "$RELEASE_VERSION" --notes-file release-notes.md
+          fi
+          gh release edit "$RELEASE_VERSION" --target "$GITHUB_SHA" --title "$RELEASE_VERSION · 四端任务更新与 Linux 独立版" --notes-file release-notes.md
+          gh release upload "$RELEASE_VERSION" release-assets/* --clobber
+          gh release edit "$RELEASE_VERSION" --draft=false --latest

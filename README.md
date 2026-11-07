@@ -29,7 +29,7 @@ Windows/Linux 服务保持后台运行；关闭网页不退出，可在工作台
 - shortcuts/：iPhone 动作图、构建签名工具、模拟与结构测试。
 - activity-manifest.json / verify_activity.py：核对四端的活动配置。
 - tools/package_release.py：生成 ZIP/tar.gz，包内附 SHA256SUMS.txt。
-- .github/workflows/release-build.yml：Windows/Linux 原生构建、单元与成品启动检查、服务器打包。
+- .github/workflows/release-build.yml：Windows/Linux 原生构建、单元与成品启动检查、服务器打包；全部成功后校验并发布压缩包与手机签名文件。
 
 各目录有中文注释和使用说明，阅读顺序见 docs/代码阅读指南.md。运行 `python3 verify_activity.py` 检查配置一致。前端未改变功能，已附网页成品；重建时在 web/ 下运行 npm ci，再运行 npm run build -- --outDir ../dist（Node 20.19+/22.12+）。
 
