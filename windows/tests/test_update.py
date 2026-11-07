@@ -96,7 +96,8 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(executable.read_bytes(), b'new executable')
         self.assertEqual(root.with_name('install.previous').joinpath('LostArkHelper.exe').read_bytes(), b'old executable')
         launch.assert_called_once()
-        self.assertEqual(launch.call_args.args[0], [str(executable), '--no-browser'])
+        self.assertEqual(Path(launch.call_args.args[0][0]), executable.resolve())
+        self.assertEqual(launch.call_args.args[0][1:], ['--no-browser'])
 
     def test_check_publishes_version_and_expected_digest(self):
         release = {'tag_name': 'v0.3.0', 'html_url': 'https://github.com/youboRepo/LostArkHelper/releases/tag/v0.3.0', 'assets': [{'name': 'SHA256SUMS.txt'}, {'name': 'LostArkHelper-Windows-x64-v0.3.0.zip'}]}
@@ -128,7 +129,7 @@ class UpdateTests(unittest.TestCase):
                 patch.object(updater, 'current_version', return_value='v0.2.0'), \
                 patch.object(updater, 'state', return_value={'latest_version': 'v0.3.0', 'latest_checksum': hashlib.sha256(archive).hexdigest()}), \
                 patch.object(updater, 'prepare', return_value=(archive, 'LostArkHelper-Windows-x64-v0.3.0.zip')), \
-                patch.object(updater.subprocess, 'Popen'), patch.object(updater, 'finish_update') as finish:
+                patch.object(updater.subprocess, 'Popen'), patch.object(updater, 'finish_update', side_effect=lambda operation, root, stop: operation.release()) as finish:
             updater.worker()
             self.assertTrue(self.root.joinpath('update-download.bin').is_file())
             finish.assert_called_once()

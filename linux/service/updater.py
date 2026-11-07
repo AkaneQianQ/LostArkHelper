@@ -213,6 +213,8 @@ def apply_downloaded(archive, asset_name, root, executable):
         raise ValueError('更新包名称与版本不一致')
     root = Path(root).resolve()
     executable = Path(executable).resolve()
+    if root == root.parent:
+        raise ValueError('不能更新文件系统根目录')
     if executable.parent != root or executable.name != expected_name:
         raise ValueError('只允许更新当前发行目录')
     target = root.parent / (root.name + '.updating')

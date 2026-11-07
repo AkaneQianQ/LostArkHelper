@@ -30,6 +30,7 @@ def main():
         try:
             updater.apply_downloaded(archive, metadata['name'], root, executable)
         except Exception:
+            print('更新安装失败，正在恢复原版本。', flush=True)
             subprocess.Popen([str(executable), '--no-browser'], stdin=subprocess.DEVNULL,
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                              creationflags=getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0) | getattr(subprocess, 'DETACHED_PROCESS', 0),
