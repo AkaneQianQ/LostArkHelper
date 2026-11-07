@@ -1,5 +1,6 @@
 import hashlib
 import io
+import json
 import os
 from pathlib import Path
 import sys
@@ -12,6 +13,7 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'service'))
 import app
 import updater
+import update_worker
 
 
 def archive_bytes(version='v0.3.0', windows=True, valid=True):
@@ -110,6 +112,15 @@ class UpdateTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 updater.start()
             thread.assert_not_called()
+
+    def test_worker_recovers_old_service_after_bad_archive(self):
+        executable = self.root / 'LostArkHelper.exe'
+        executable.write_bytes(b'old executable')
+        self.root.joinpath('update-download.json').write_text(json.dumps({'name': 'LostArkHelper-Windows-x64-v0.3.0.zip'}))
+        self.root.joinpath('update-download.bin').write_bytes(b'not an archive')
+        with patch.object(sys, 'frozen', True, create=True), patch.object(updater, 'current_version', return_value='v0.2.0'), patch.object(update_worker.subprocess, 'Popen') as launch:
+            self.assertEqual(update_worker.install(self.root, executable), 1)
+            self.assertEqual(Path(launch.call_args.args[0][0]), executable.resolve())
 
     def test_pending_game_operation_blocks_update_before_download(self):
         app.ROOT = self.root

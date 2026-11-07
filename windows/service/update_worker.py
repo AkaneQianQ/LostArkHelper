@@ -25,33 +25,39 @@ def main():
 
 
 def install(root, executable):
-    for _ in range(120):
-        if not root.joinpath('instance.json').exists():
-            break
-        time.sleep(0.5)
-    else:
-        print('旧服务未正常退出，已取消更新；旧版本保留。', flush=True)
-        return 1
-    lock = updater.InstallLock(root)
-    if not lock.acquire():
-        return 1
+    root = Path(root).resolve()
+    executable = Path(executable).resolve()
     try:
-        metadata = json.loads(root.joinpath('update-download.json').read_text(encoding='utf-8'))
-        archive = root.joinpath('update-download.bin').read_bytes()
+        for _ in range(120):
+            if not root.joinpath('instance.json').exists():
+                break
+            time.sleep(0.5)
+        else:
+            print('旧服务未正常退出，已取消更新；旧版本保留。', flush=True)
+            return 1
+        lock = updater.InstallLock(root)
+        if not lock.acquire():
+            return 1
         try:
-            updater.apply_downloaded(archive, metadata['name'], root, executable)
-        except Exception:
-            print('更新安装失败，正在恢复原版本。', flush=True)
-            subprocess.Popen([str(executable), '--no-browser'], stdin=subprocess.DEVNULL,
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                             creationflags=getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0) | getattr(subprocess, 'DETACHED_PROCESS', 0),
-                             close_fds=True)
-            raise
-    finally:
-        lock.release()
-        for name in ('update-download.json', 'update-download.bin'):
-            root.joinpath(name).unlink(missing_ok=True)
-    return 0
+            metadata = json.loads(root.joinpath('update-download.json').read_text(encoding='utf-8'))
+            archive = root.joinpath('update-download.bin').read_bytes()
+            try:
+                updater.apply_downloaded(archive, metadata['name'], root, executable)
+            except Exception:
+                print('更新安装失败，正在恢复原版本。', flush=True)
+                subprocess.Popen([str(executable), '--no-browser'], stdin=subprocess.DEVNULL,
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                 creationflags=getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0) | getattr(subprocess, 'DETACHED_PROCESS', 0),
+                                 close_fds=True)
+                raise
+        finally:
+            lock.release()
+            for name in ('update-download.json', 'update-download.bin'):
+                root.joinpath(name).unlink(missing_ok=True)
+        return 0
+    except Exception as exc:
+        print('更新失败：{} {}'.format(type(exc).__name__, str(exc)[:300]), flush=True)
+        return 1
 
 
 if __name__ == '__main__':

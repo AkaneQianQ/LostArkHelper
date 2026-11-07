@@ -253,11 +253,12 @@ def apply_downloaded(archive, asset_name, root, executable):
 class InstallLock:
     # 独立更新进程不加载 automation，避免多个更新进程同时替换目录。
     def __init__(self, root):
+        self.root = Path(root)
         self.file = None
 
     def acquire(self):
         try:
-            self.file = open(Path(root) / 'install.lock', 'a+b')
+            self.file = open(self.root / 'install.lock', 'a+b')
             platform_lock.acquire(self.file.fileno(), False)
             return True
         except (BlockingIOError, OSError):

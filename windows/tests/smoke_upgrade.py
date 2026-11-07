@@ -8,6 +8,9 @@ import sys
 import tempfile
 import time
 import zipfile
+import sys
+
+sys.stdout.reconfigure(encoding='utf-8')
 
 from smoke_frozen import request
 
