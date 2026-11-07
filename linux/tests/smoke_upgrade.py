@@ -98,6 +98,9 @@ def main():
             assert not state_file.exists(), '新版服务未安全停止'
             print('Linux upgrade passed: verified package, old exit, replacement, data retention, new process, backup.')
         finally:
+            log = data / 'LostArkHelper' / 'update.log'
+            if log.is_file():
+                print(log.read_text(encoding='utf-8'))
             if proc.poll() is None:
                 proc.terminate()
                 proc.wait(timeout=15)

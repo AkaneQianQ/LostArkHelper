@@ -97,6 +97,9 @@ def main():
             assert not state_file.exists(), '新版服务未安全停止'
             print('Windows upgrade passed: verified package, old exit, replacement, data retention, new process, backup.')
         finally:
+            log = data / 'LostArkHelper' / 'update.log'
+            if log.is_file():
+                print(log.read_text(encoding='utf-8'))
             if proc.poll() is None:
                 subprocess.run(['taskkill', '/PID', str(proc.pid), '/T', '/F'], capture_output=True)
             subprocess.run(['taskkill', '/IM', 'LostArkHelper.exe', '/F'], capture_output=True)

@@ -1,4 +1,5 @@
 """旧服务退出后安装已校验的更新，并保留旧目录供恢复。"""
+import contextlib
 import json
 from pathlib import Path
 import subprocess
@@ -14,6 +15,16 @@ def main():
         return 2
     root = Path(sys.argv[1]).resolve()
     executable = Path(sys.argv[2]).resolve()
+    # Windows 的更新进程没有控制台；私有日志用于定位替换失败，不记录账号或压缩包内容。
+    with root.joinpath('update.log').open('a', encoding='utf-8') as log, contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
+        try:
+            return install(root, executable)
+        except Exception as exc:
+            print('更新失败：{} {}'.format(type(exc).__name__, str(exc)[:300]), flush=True)
+            return 1
+
+
+def install(root, executable):
     for _ in range(120):
         if not root.joinpath('instance.json').exists():
             break
