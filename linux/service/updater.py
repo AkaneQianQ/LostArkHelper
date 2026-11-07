@@ -224,8 +224,9 @@ def apply_downloaded(archive, asset_name, root, executable):
     else:
         files, (top, version), modes = read_tar(io.BytesIO(archive))
         expected_name = 'LostArkHelper'
-    if not supported() or version_tuple(version) <= version_tuple(current_version()):
-        raise ValueError('更新包版本无效或低于当前版本')
+    current = current_version()
+    if not supported() or version_tuple(version) <= version_tuple(current):
+        raise ValueError('更新包版本 {} 无效或低于当前版本 {}'.format(version, current or '未知'))
     if asset_name != f'LostArkHelper-{platform_name()}-{version}.' + ('zip' if platform_name() == 'Windows-x64' else 'tar.gz'):
         raise ValueError('更新包名称与版本不一致')
     root = Path(root).resolve()
@@ -290,15 +291,18 @@ class InstallLock:
 
 def worker():
     import app
-    operation = __import__('automation').OperationLock(app.ROOT)
-    worker_thread = threading.Thread(target=finish_update, args=(operation, app.ROOT, app.REQUEST_STOP), daemon=False)
+    data_root = Path(app.ROOT).resolve()
+    executable = Path(sys.executable).resolve()
+    program_root = executable.parent
+    operation = __import__('automation').OperationLock(data_root)
+    worker_thread = threading.Thread(target=finish_update, args=(operation, data_root, app.REQUEST_STOP), daemon=False)
     # 独占整段下载与替换准备，游戏计划暂时等待。
     if not operation.acquire(blocking=True):
         raise RuntimeError('等待游戏操作结束超时')
     try:
         with LOCK:
             STATE.update(status='downloading', error='')
-        if (app.ROOT / 'pending-operation.json').exists():
+        if (data_root / 'pending-operation.json').exists():
             raise RuntimeError('存在待确认的游戏操作，请先核对，暂不更新')
         tag = state().get('latest_version')
         version_tuple(tag)
@@ -307,10 +311,10 @@ def worker():
         archive, name = prepare(tag)
         if hashlib.sha256(archive).hexdigest() != state().get('latest_checksum'):
             raise RuntimeError('更新包 SHA256 校验失败，已取消更新')
-        app.ROOT.joinpath('update-download.json').write_text(json.dumps({'version': tag, 'name': name}, ensure_ascii=False), encoding='utf-8')
-        app.ROOT.joinpath('update-download.bin').write_bytes(archive)
+        data_root.joinpath('update-download.json').write_text(json.dumps({'version': tag, 'name': name}, ensure_ascii=False), encoding='utf-8')
+        data_root.joinpath('update-download.bin').write_bytes(archive)
         # 单文件 PyInstaller 的 sys.executable 是程序自身，使用内置更新入口而不是 Python 解释器。
-        subprocess.Popen([sys.executable, '--update-worker', str(app.ROOT), sys.executable],
+        subprocess.Popen([executable, '--update-worker', str(data_root), str(program_root), str(executable)],
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL,
                          creationflags=getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0) | getattr(subprocess, 'DETACHED_PROCESS', 0),

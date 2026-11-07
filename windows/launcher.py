@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import shutil
 import sys
 import threading
 import time
@@ -48,12 +49,25 @@ def reopen(state_file):
         return False
 
 
+def cleanup_update_runtime(root):
+    # 更新进程退出后会释放自身文件；新版启动后短暂重试即可清理临时运行时。
+    staging = Path(root) / 'update-runtime'
+    for _ in range(40):
+        try:
+            shutil.rmtree(staging)
+            return
+        except FileNotFoundError:
+            return
+        except OSError:
+            time.sleep(0.25)
+
+
 # 先拿单实例锁，再启动本机 HTTP 与调度线程，最后可选打开浏览器；退出时等待已开始操作结束。
 def main():
     parser = argparse.ArgumentParser(description='命运方舟助手 Windows 本地服务')
     parser.add_argument('--port', type=int, default=18745)
     parser.add_argument('--no-browser', action='store_true')
-    parser.add_argument('--update-worker', nargs=2, help=argparse.SUPPRESS)
+    parser.add_argument('--update-worker', nargs=3, help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.update_worker:
         sys.argv = [sys.argv[0], *args.update_worker]
@@ -96,6 +110,7 @@ def main():
                                           'instance': app.INSTANCE_ID})
         worker = threading.Thread(target=scheduler.serve, args=(root, stop), daemon=False)
         worker.start()
+        threading.Thread(target=cleanup_update_runtime, args=(root,), daemon=True).start()
         print('命运方舟助手已启动：http://127.0.0.1:{}'.format(app.PORT), flush=True)
         print('数据目录：{}'.format(root), flush=True)
         print('服务在后台运行；关闭网页不会停止。请在工作台的启动设置中安全停止服务。', flush=True)

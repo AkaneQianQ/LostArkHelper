@@ -145,12 +145,16 @@ class UpdateTests(unittest.TestCase):
             thread.assert_not_called()
 
     def test_worker_recovers_old_service_after_bad_archive(self):
-        executable = self.root / 'LostArkHelper.exe'
+        data_root = self.root / 'data'
+        program_root = self.root / 'program'
+        data_root.mkdir()
+        program_root.mkdir()
+        executable = program_root / 'LostArkHelper.exe'
         executable.write_bytes(b'old executable')
-        self.root.joinpath('update-download.json').write_text(json.dumps({'name': 'LostArkHelper-Windows-x64-v0.3.0.zip'}))
-        self.root.joinpath('update-download.bin').write_bytes(b'not an archive')
+        data_root.joinpath('update-download.json').write_text(json.dumps({'name': 'LostArkHelper-Windows-x64-v0.3.0.zip'}))
+        data_root.joinpath('update-download.bin').write_bytes(b'not an archive')
         with patch.object(sys, 'frozen', True, create=True), patch.object(updater, 'current_version', return_value='v0.2.0'), patch.object(update_worker.subprocess, 'Popen') as launch:
-            self.assertEqual(update_worker.install(self.root, executable), 1)
+            self.assertEqual(update_worker.install(data_root, program_root, executable), 1)
             self.assertEqual(Path(launch.call_args.args[0][0]), executable.resolve())
 
     def test_pending_game_operation_blocks_update_before_download(self):
@@ -164,17 +168,31 @@ class UpdateTests(unittest.TestCase):
             prepare.assert_not_called()
 
     def test_staged_update_keeps_game_lock_until_old_instance_exits(self):
-        app.ROOT = self.root
+        data_root = self.root / 'data'
+        program_root = self.root / 'program'
+        data_root.mkdir()
+        program_root.mkdir()
+        executable = program_root / 'LostArkHelper.exe'
+        executable.write_bytes(b'old executable')
+        app.ROOT = data_root
         app.REQUEST_STOP = lambda: None
         archive = archive_bytes()
-        with patch.object(sys, 'frozen', True, create=True), patch.object(sys, 'executable', str(self.root / 'LostArkHelper.exe')), \
+        with patch.object(sys, 'frozen', True, create=True), patch.object(sys, 'executable', str(executable)), \
                 patch.object(updater, 'current_version', return_value='v0.2.0'), \
                 patch.object(updater, 'state', return_value={'latest_version': 'v0.3.0', 'latest_checksum': hashlib.sha256(archive).hexdigest()}), \
                 patch.object(updater, 'prepare', return_value=(archive, 'LostArkHelper-Windows-x64-v0.3.0.zip')), \
-                patch.object(updater.subprocess, 'Popen'), patch.object(updater, 'finish_update', side_effect=lambda operation, root, stop: operation.release()) as finish:
+                patch.object(updater.subprocess, 'Popen') as launch, \
+                patch.object(updater, 'finish_update', side_effect=lambda operation, root, stop: operation.release()) as finish:
             updater.worker()
-            self.assertTrue(self.root.joinpath('update-download.bin').is_file())
+            self.assertTrue(data_root.joinpath('update-download.bin').is_file())
+            staged_executable = data_root / 'update-runtime' / 'program' / 'LostArkHelper.exe'
+            launch.assert_called_once()
+            self.assertEqual(Path(launch.call_args.args[0][0]).resolve(), staged_executable.resolve())
+            self.assertEqual(launch.call_args.args[0][1], '--update-worker')
+            self.assertEqual([Path(item).resolve() for item in launch.call_args.args[0][2:]],
+                             [data_root.resolve(), program_root.resolve(), executable.resolve()])
             finish.assert_called_once()
+            self.assertEqual(Path(finish.call_args.args[1]).resolve(), data_root.resolve())
 
     def test_api_requires_login_confirmation_and_source(self):
         app.ROOT = self.root
