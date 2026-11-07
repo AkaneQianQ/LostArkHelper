@@ -1,125 +1,102 @@
-# Windows 免 Python 单文件版（2026-11-06 更新）
+# 命运方舟助手 Windows 本地版 · 0.2.0
 
-现已可以构建并直接运行 LostArkHelper.exe，使用说明见 EXE使用说明.md。无需 Python，后台运行。升级前停止旧服务，使用原本数据目录；旧版自启记录需要在 exe 版中关闭再开启以更新路径。
+支持 Windows 10/11 x64，以“本地服务 + 浏览器工作台”运行。GitHub Release 提供完整 ZIP 压缩包，内含 Python 运行时和已构建网页，使用者无需安装 Python 或 Node.js。无需注册账号，游戏请求由本机直接发送到腾讯官方接口。
 
-GitHub Actions 的 Windows x64 环境中 13 项测试全部通过，含 DPAPI，生成的 EXE 通过隔离 Python PATH 的启动、网页、鉴权、重复启动与安全退出检查。未调用真实游戏 API。默认浏览器打开、Windows 10/11 用户桌面的登录自启需用户验证。
+## 使用与升级
 
-重新构建：Windows 中执行 build-windows.ps1，默认输出 release/LostArkHelper.exe；-Mode onedir 可保留目录构建。下方是先前源码版的历史说明，其中“没有 exe / 未完成 Windows 测试”的描述已被本节更新。
+1. 将下载的 ZIP **完整解压**到固定本地目录，双击 `LostArkHelper.exe`。如果 exe 在子目录中，请保留整个目录结构及其 `_internal` 资源。
+2. 工作台自动打开。首次在“账号管理”粘贴官方 App 的完整活动链接，先刷新并核对角色和状态。
+3. 程序在后台运行，没有需要保持打开的终端；关闭网页不停止服务，再次双击会打开已有实例的工作台。
+4. 停止服务：工作台“定时设置 → 启动设置 → 停止本地服务”。程序会等待已经开始的操作完成。
+5. “登录 Windows 后自动启动”可在同一页面开启。移动程序目录、从源码版切换或更新 exe 路径后，请关闭再开启自启以更新记录。
 
----
+升级前先安全停止旧服务，然后替换程序文件。同一 Windows 用户下数据目录不变，可以继续使用已有配置和历史。首次运行默认不开启计划；避免本地与服务器同时调度同一个游戏账号。
 
-# 0.1.2 后台运行版使用说明（优先于下方旧版本说明）
+源码运行适用于开发者：安装 Python 3.11+ 后双击 `启动助手.vbs`，或执行 `py -3 launcher.py`；`调试启动.cmd` 会保留终端便于排查。发行 ZIP 中的 exe 不需要这些工具。
 
-1. 先在旧终端按 Ctrl+C，等待服务停止，再更新文件；不要强行关闭正在领奖的进程。
-2. 解压新版到固定本地目录，双击 **启动助手.vbs**。它会后台运行服务并打开浏览器，终端无需保持打开。需要 Python 3.11+ 及 py 启动器。
-3. 关闭浏览器不会停止服务；再次双击可重新打开工作台。
-4. 工作台「定时设置 → 启动设置 → 停止本地服务」可以退出，服务会等待已经开始的操作完成。开机自启不会因此被关闭。
-5. 若启用过开机自启，请在新版中关闭再开启一次，更新为 background.pyw 入口。未登录 Windows、休眠和关机时仍无法执行。
-6. 启动日志：`%LOCALAPPDATA%\LostArkHelper\service.log`，自动轮转；错误时可运行「调试启动.cmd」查看。
+## 活动与任务范围
 
-`启动助手.cmd` 仅用于转交后台入口，可能短暂闪现；VBS 本身不显示终端。若系统未安装或禁用 VBScript，可右键 background.pyw 使用 Python（窗口版/pythonw.exe）打开。exe 构建改为 PyInstaller windowed，构建后也无控制台。
+活动版本为 **2611**，接口为 `partnergettaskreward2611`，启用任务 ID **1–13**，领取表单均为 `task_id=<任务 ID>&type=1`。查询列表中的任务分类 `type` 与领取参数 `type` 不是同一个含义。
 
-此包尚未在 Windows 实测 VBS、窗口版 exe 和完整退出流程；已有通用 API/调度测试通过，Windows DPAPI 仍按平台跳过。cmd 文件已使用 GBK + CRLF；原终端模式保留为「调试启动.cmd」。
+| ID | 任务 | 参数来源 |
+| --- | --- | --- |
+| 1 | 登录游戏 | 已收录接口 |
+| 2 | 讨伐1次星辰护卫 | 已收录接口 |
+| 3 | 通关1次卡杰洛斯副本 | 已收录接口 |
+| 4 | 通关2次影子副本 | 已收录接口 |
+| 5 | 通关5次混沌地牢或库尔赞前线 | 已收录接口 |
+| 6 | 通关1次极焰的沙漏 | 按已有接口推断，未获成功抓包验证 |
+| 7 | 累计签到7天 | 按已有接口推断，未获成功抓包验证 |
+| 8 | 累计签到14天 | 按已有接口推断，未获成功抓包验证 |
+| 9 | 累计签到21天 | 按已有接口推断，未获成功抓包验证 |
+| 10 | 累计签到28天 | 按已有接口推断，未获成功抓包验证 |
+| 11 | 首次查看活动规则 | 按已有接口推断，未获成功抓包验证 |
+| 12 | 首次成功组建4人小队 | 已收录接口 |
+| 13 | 小队登录游戏(4/4) | 已收录接口 |
 
----
+ID 6–11 按用户要求启用，**尚未用真实账号验证其领奖参数**。程序只能领取官方返回为可领取的奖励，不能代替通关、累计签到或查看活动规则等完成任务条件。
 
-# 命运方舟助手 Windows 本地服务版 · 0.1.0
+`service/activity.json` 中 `verified_claims` 为兼容历史代码保留的启用列表名称；`inferred_task_ids` 明确标注推断部分，不能把历史字段名当作验证证据。
 
-本包为可在 Windows 启动的源码发行版，包含已构建的网页。不需要 Node.js，不连接原来的云后台；游戏请求由电脑直接发送到腾讯官方接口。
+执行时先查询签到和任务；未签到时签到，任务仅在 `status=1` 且 ID 已收录时提交。每笔提交前重新查询，提交后必须确认为 `status=2`；重复 ID、未完成、已领取及未知 ID 均跳过。超时、返回错误或查询未确认时停止后续操作，保存待确认记录，后续运行先核实状态，避免自动重试产生重复提交。
 
-当前尚未在真实 Windows 环境完成运行/打包验收；没有附带已验证的 exe。开发主机为 macOS，Windows SSH 通道未连接成功。通用逻辑和本地 HTTP 已测试，Windows DPAPI 测试需在 Windows 执行。
+## 计划、数据和开机启动
 
-## 立即使用
+- 支持每小时指定分钟或每天指定时间，均按北京时间 UTC+8。休眠、关机或未登录 Windows 时无法执行；恢复后只合并最近一次应执行计划，不逐小时补跑。
+- 程序单实例，游戏写操作串行；计划和历史保存在 SQLite。
+- 本地服务只监听 `127.0.0.1`，默认端口 18745；被占用时选择随机可用端口。浏览器通过启动器生成的 HttpOnly/SameSite Cookie 访问；每次重启需要重新打开工作台。
+- 开机启动使用当前用户注册表 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 的 `LostArkHelper` 项，不需要管理员权限。带 `--no-browser`，登录时不自动弹网页；操作系统启动应用设置或安全软件可能禁用启动项。
 
-1. 在 Windows 10/11 安装 Python 3.11 或更新版本（建议 3.12，包含 Python Launcher `py`）。
-2. 解压整个包，双击 `启动助手.cmd`。
-3. 程序在本机启动，自动打开默认浏览器，无需注册、登录密码。
-4. 在“账号管理”粘贴自己官方 App 的完整活动链接，先刷新核对角色/状态。
-5. 可手动签到领奖，或在“定时设置”开启计划。
+数据目录：`%LOCALAPPDATA%\LostArkHelper`。
 
-默认只监听 `127.0.0.1:18745`；端口占用时使用随机可用端口。重复启动会打开已有实例的页面。浏览器关闭后服务继续运行；在终端按 Ctrl+C 安全退出。不要在操作提交过程中强制关闭窗口。
+| 文件 | 用途 |
+| --- | --- |
+| `credentials.dpapi` | 当前 Windows 用户 DPAPI 加密的游戏凭据，无明文回退 |
+| `automation.sqlite3` | 定时设置和执行记录 |
+| `pending-operation.json` | 未确认提交标记，无原始凭据 |
+| `instance.json` | 本机服务会话及随机访问令牌，不要分享 |
+| `service.log` | 脱敏启动日志，自动轮转 |
 
-使用命令行可指定端口或不自动打开浏览器：
+DPAPI 与当前 Windows 用户绑定，重装系统或换用户后可能需重新导入链接。同一已登录用户权限下的软件仍可能读取凭据，数据目录请勿公开共享。
 
-```powershell
-py -3 launcher.py --port 18745
-py -3 launcher.py --no-browser
-```
+提交未确认时，程序只查询核实，确认已签到或任务已领取后自动解除标记。若官方 App 已人工核实而标记无法解除，请先安全停止服务，备份后人工处理 `pending-operation.json`；结果未知时不要清除标记强行重试。
 
-本机访问令牌由启动器产生，浏览器收到 HttpOnly/SameSite Cookie。每次重启服务后旧浏览器会话失效，请重新双击启动器打开。不要向他人分享启动器生成的带 key 地址。
+## 从源码构建
 
-## 功能范围
+必须在 Windows 构建；推荐 Python 3.12 x64。构建脚本创建 `.build-venv`，安装锁定的 `PyInstaller==6.16.0`，运行测试，再运行实际冻结程序的冒烟测试。应用运行时代码使用 Python 标准库及 Windows DPAPI，开发者不需要额外 Python 包；网页资源已附在 `dist/`。
 
-- 一个本机游戏账号，可刷新同一账号和角色的登录链接。当前未提供多账号切换。
-- 查询签到/任务、未签到时签到、领取已验证任务；提交前后核对状态。
-- 活动 2611，白名单 ID 1、2、3、4、5、12、13，领取参数均为 type=1。
-- 定时计划、手动/自动执行历史保存到 SQLite。
-- 每小时指定分钟或每天指定时间，均按北京时间 UTC+8。
-- 电脑恢复或应用重启时，只合并执行最近一次应执行计划，不逐小时补跑；新启用计划也可能立即检查最近一次计划。
-- 操作串行及程序单实例；提交结果不确定时立即停止后续写操作，保存待确认标记。
-
-Windows 凭据使用当前用户的 DPAPI 加密，无明文回退。只在用户登录且程序运行时执行；不依赖 systemd/云服务。系统休眠、断网和关机会影响执行。
-
-## 本地数据
-
-`%LOCALAPPDATA%\LostArkHelper\`
-
-- `credentials.dpapi`：Windows 当前用户加密的游戏凭据。
-- `automation.sqlite3`：计划和执行记录。
-- `pending-operation.json`：未确认提交标记，不含原始凭据。
-- `instance.json`：本机启动会话信息，含访问令牌；不要分享。
-- 锁文件：避免重复实例、并发提交。
-
-DPAPI 不能防御同一已登录 Windows 用户权限下的恶意软件。不要把数据目录公开共享。更换 Windows 用户/重装系统后请重新导入链接，不保证加密文件可迁移。
-
-结果未确认时，程序只查询核对；确认已签到/任务已领取后解除标记，否则继续阻止提交。若官方 App 已人工核实但标记无法自动解除，请先安全停止服务，再备份和人工处理 pending-operation.json，不能在未知结果时直接清除以强行重试。
-
-本版未迁移服务器上的任何账号凭据或计划。首次运行默认不开启定时任务。避免本地与服务器同时调度同一账号。
-
-## 构建 exe
-
-必须在 Windows 上构建。PowerShell 进入包目录：
+在仓库根目录执行目录构建：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\build-windows.ps1
+powershell -ExecutionPolicy Bypass -File .\windows\build-windows.ps1 -Mode onedir
 ```
 
-脚本创建独立构建环境、安装锁定的 PyInstaller、执行测试，再输出：
+输出 `windows\release\LostArkHelper\LostArkHelper.exe`，发布时将整个 `LostArkHelper` 文件夹、使用说明和校验值压缩为 ZIP，不能只拷贝 exe。此模式将运行库放在同目录的 `_internal` 中。
 
-`release\LostArkHelper\LostArkHelper.exe`
+默认不传 `-Mode` 时为单文件构建，输出 `windows\release\LostArkHelper.exe`，运行时将内置资源释放到临时目录。两种构建均不显示控制台，均须通过脚本末尾的实际 exe 检查。可以用 `-PythonExecutable C:\Path\python.exe` 指定构建用 Python。
 
-请分发整个 `LostArkHelper` 文件夹，不能只复制 exe。保留控制台便于明确程序运行/停止状态。构建环境需要联网下载 Python 构建依赖；日常使用不依赖 PyInstaller。
+修改网页时，再进入 `web/` 安装 Node 依赖并执行生产构建；仅运行或打包已有页面无需 Node.js。
 
-网页已构建并包含于 dist/assets。修改页面时再进入 web 目录安装 Node 依赖和重建，不是使用本服务的前置条件。旧 server 目录/登录页面源文件如仍在 web 工程中不参与本地后端启动。
-
-## 验证
+## 验证范围
 
 ```powershell
-py -3 -m unittest discover -s tests -v
+py -3 -m unittest discover -s windows/tests -v
 ```
 
-开发主机：9 项测试中 8 项通过、1 项 Windows DPAPI 测试按平台跳过。覆盖单实例/操作锁、SQLite 计划去重、错过计划合并、未知提交阻断与下次确认、本地 Host/Origin/Cookie 访问限制及计划保存。网页生产构建成功，浏览器检查过本机免登录入口、账号导入入口和定时页面。未用真实凭据触发签到/领奖。
+测试覆盖全部任务配置、每个推断任务的参数和前后状态确认、不完整/重复/未知任务跳过、超时后停止和重启阻断、锁互斥、SQLite 关闭与回滚、计划去重、HTTP 鉴权和安全停止、DPAPI 及自启注册表逻辑。Windows DPAPI 测试只在真实 Windows 执行。
 
-Windows 验收还需确认：DPAPI 往返测试、锁互斥、双击启动与二次启动、打包 exe 资源加载、同账号链接导入/更新、计划运行、休眠恢复与安全退出。
+`tests/smoke_frozen.py` 在 Windows 上用隔离的 PATH 和临时数据目录启动 exe，检查网页资源、鉴权、重复实例及安全退出，不调用游戏 API。浏览器自动弹出、用户桌面登录自启、休眠恢复以及 ID 6–11 真实领奖仍需对应设备和账号验证，模拟测试不能替代这些结果。
 
-## 项目文件
+## 代码入口
 
-- launcher.py：启动/单实例/浏览器入口/调度线程。
-- service/app.py：本地网页与 API。
-- service/credentials.py：Windows DPAPI。
-- service/platform_lock.py：Windows msvcrt / POSIX flock。
-- service/scheduler.py：应用内调度，最近时间槽合并。
-- service/automation.py：写操作、状态确认、待确认持久化、运行记录。
-- service/activity.json：当前活动与任务白名单。
-- service/helper.py、import_link.py：原项目接口与链接解析。
-- web/：本地版前端源代码；dist/：可直接使用的构建产物。
+- `launcher.py`：单实例、HTTP 服务、浏览器入口和调度线程。
+- `background.pyw`：无控制台入口与轮转日志。
+- `service/app.py`：本机网页 API 和安全停止。
+- `service/credentials.py`：Windows DPAPI 凭据读写。
+- `service/automation.py`：逐笔提交、状态确认和持久化待确认标记。
+- `service/scheduler.py`、`store.py`：计划、最近时间槽和执行历史。
+- `service/activity.json`、`helper.py`：活动范围、推断标记和官方接口。
+- `service/autostart.py`、`platform_lock.py`：自启和平台锁。
+- `web/`：前端源代码；`dist/`：已构建网页。
 
-后续新增接口或任务，必须同步服务器、本地版、快捷指令的适用配置；特殊白名单差异需明确记录。此次仅开发本地版本，没有修改云服务器或快捷指令。
-
-## 0.1.1：开机自启开关
-
-工作台「定时设置 → 启动设置」提供「登录 Windows 后自动启动」，开启/关闭立即保存。使用当前用户 HKCU\Software\Microsoft\Windows\CurrentVersion\Run 中的 LostArkHelper 值，无需管理员权限；关闭只移除本程序的值。
-
-自启带 --no-browser，不自动打开网页；源码版优先使用 pythonw.exe，无控制台。exe 目前仍为控制台构建，登录后可能出现运行窗口，不承诺静默托盘；可手动再次启动以打开工作台。移动程序目录后应在网页重新开启以更新位置。Windows 启动应用管理器/安全软件仍可能禁用启动项，网页读取的是注册表配置，不保证操作系统最终放行。
-
-12 项测试中 11 通过、Windows DPAPI 测试跳过。自启新增测试使用模拟注册表验证开启、关闭、外部位置变化及路径引用；真实 Windows 登录自启仍待实测。开发主机不会修改任何实际 Windows 启动设置。
+新增接口时需同步服务器、Windows、Linux 和 iPhone 快捷指令的适用配置。

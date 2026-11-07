@@ -23,8 +23,12 @@ CLAIM = 'partnergettaskreward' + VERSION
 SIGN_LIST = 'partnersignlist' + VERSION
 SIGN_IN = 'partnersignin' + VERSION
 VERIFIED = {int(key): value for key, value in ACTIVITY['verified_claims'].items()}
+# VERIFIED 是历史兼容名称；启用列表中包含用户授权加入的推断任务，不能据此认定已抓包验证。
+INFERRED = frozenset(ACTIVITY.get('inferred_task_ids', []))
 if any(key <= 0 or type(value) is not int or value != 1 for key, value in VERIFIED.items()):
     raise ValueError('Invalid verified claim mapping')
+if any(type(key) is not int or key not in VERIFIED for key in INFERRED):
+    raise ValueError('Invalid inferred task IDs')
 TYPES = {1: '每日', 2: '每周', 3: '活动'}
 STATUS = {0: '未完成（推测）', 1: '可领取（推测）', 2: '已完成/已领取（推测）', 3: '已结束（样本）'}
 
@@ -130,7 +134,7 @@ def show(items):
 def main():
     parser = argparse.ArgumentParser(description='查询方舟最佳搭档任务；默认不会领取')
     parser.add_argument('--config', default='config.json', help='凭据文件路径')
-    parser.add_argument('--claim', action='store_true', help='领取当前可领取且在已验证白名单中的任务')
+    parser.add_argument('--claim', action='store_true', help='领取当前可领取且在启用列表中的任务（包含已标注的推断任务）')
     parser.add_argument('--sign', action='store_true', help='仅在未签到时执行当日签到，不补签')
     args = parser.parse_args()
     try:
@@ -155,9 +159,9 @@ def main():
         candidates = [t for t in items if t['status'] == 1 and t['id'] in VERIFIED]
         unknown = [t for t in items if t['status'] == 1 and t['id'] not in VERIFIED]
         if unknown:
-            print('\n有可领取但尚未验证领取参数的任务，已跳过：' + ', '.join(str(t['id']) for t in unknown))
+            print('\n有可领取但未收录领取参数的任务，已跳过：' + ', '.join(str(t['id']) for t in unknown))
         if not candidates:
-            print('没有可领取的已验证任务。')
+            print('没有可领取的已启用任务。')
             return 0
         for candidate in candidates:
             # Refresh before every mutation, ensuring it remains claimable.
@@ -174,7 +178,7 @@ def main():
                 return 1
             try:
                 after = [t for t in tasks(config) if t['id'] == tid]
-                if len(after) != 1 or after[0]['status'] == 1:
+                if len(after) != 1 or after[0]['status'] != 2:
                     print(f'ID={tid} 接口报告成功，但状态未确认；停止，请在 App 中检查。', file=sys.stderr)
                     return 1
                 print(f"ID={tid} 接口报告成功，领取后状态={after[0]['status']}。")

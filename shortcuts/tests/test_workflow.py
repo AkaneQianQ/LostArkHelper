@@ -5,7 +5,7 @@ P=pathlib.Path(__file__).resolve().parents[1]/'source/workflow.json'
 class Halt(Exception):pass
 class Runner:
  def __init__(self,mode='claim',signed=False,tasks=None,fault=None):
-  self.link='https://lostark.qq.com/cp/demo/h5.html?'+urllib.parse.urlencode(dict(token='dummy',userId='123',appOpenid='dummy',appid='102037747',roleId='456',serverId='1',areaId='2',uin='123456',acctype='qc',accessToken='dummy',access_token='dummy'));self.persisted=True;self.files={};self.prompts=0;self.saved=0;self.mode=mode;self.signed=signed;self.tasks=deepcopy(tasks if tasks is not None else [{'id':2,'type':1,'status':1},{'id':99,'type':1,'status':1}]);self.fault=fault;self.calls=[];self.v={};self.o={};self.last=None;self.config={'cookie':'dummy', 'form':{k:'dummy' for k in 'token user_id openid access_token inv_user_id login_type sRoleld iUin sGiftPartition sGiftArea acctype appid'.split()}}
+  self.link='https://lostark.qq.com/cp/demo/h5.html?'+urllib.parse.urlencode(dict(token='dummy',userId='123',appOpenid='dummy',appid='102037747',roleId='456',serverId='1',areaId='2',uin='123456',acctype='qc',accessToken='dummy',access_token='dummy'));self.persisted=True;self.files={};self.prompts=0;self.saved=0;self.mode=mode;self.signed=signed;self.tasks=deepcopy(tasks if tasks is not None else [{'id':2,'type':1,'status':1},{'id':99,'type':1,'status':1}]);self.fault=fault;self.calls=[];self.claim_ids=[];self.trace=[];self.v={};self.o={};self.last=None;self.config={'cookie':'dummy', 'form':{k:'dummy' for k in 'token user_id openid access_token inv_user_id login_type sRoleld iUin sGiftPartition sGiftArea acctype appid'.split()}}
  def string(self,v):
   if isinstance(v,dict):return json.dumps(v)
   if isinstance(v,list):return '\n'.join(self.string(i) for i in v)
@@ -24,17 +24,21 @@ class Runner:
   if t=='WFDictionaryFieldValue':return {self.value(i['WFKey']):self.value(i['WFValue']) for i in v['WFDictionaryFieldValueItems']}
   raise AssertionError(t)
  def api(self,p):
-  ep=p['WFURL'].split('/')[-1];self.calls.append(ep)
+  ep=p['WFURL'].split('/')[-1];self.calls.append(ep);self.trace.append(ep)
   assert p['WFURL'].startswith('https://api.bbs.lostark.qq.com/')
   form=self.value(p['WFFormValues']);assert form['token']=='dummy';assert 'access_token=dummy;' in self.value(p['WFHTTPHeaders'])['Cookie'];assert 'uin=o0000123456' in self.value(p['WFHTTPHeaders'])['Cookie']
   if ep=='partnersignlist2611':data={'is_sign':self.signed} if self.fault!='bad_sign' else {'is_sign':'false'}
   elif ep=='partnersignin2611':
    if self.fault=='network_sign':raise Halt('network')
-   if self.fault!='sign_unchanged':self.signed=True
+   if self.fault!='sign_unchanged':
+    self.signed=True
+    if self.fault=='sign_unlock_task':
+     for task in self.tasks:
+      if task['id']==7:task['status']=1
    data={}
   elif ep=='partnergetusertask2611':data=deepcopy(self.tasks)
   elif ep=='partnergettaskreward2611':
-   tid=int(form['task_id']);assert tid in [2,3,4,5,12,13];assert form['type']=='1'
+   tid=int(form['task_id']);assert tid in range(1,14);assert form['type']=='1';self.claim_ids.append(tid);self.trace.append(('claim',tid))
    if self.fault=='network_claim':raise Halt('network')
    if self.fault!='claim_unchanged':
     for t in self.tasks:
@@ -153,5 +157,40 @@ class Tests(unittest.TestCase):
    with self.assertRaises(Halt):r.run()
    self.assertNotIn('partnergettaskreward2611',r.calls)
  def test_all_whitelist(self):
-  r=Runner(tasks=[{'id':i,'type':1,'status':1} for i in [1,2,3,4,5,6]]);r.run();self.assertEqual([t['status'] for t in r.tasks],[1,2,2,2,2,1])
+  r=Runner(tasks=[{'id':i,'type':3 if i in range(7,12) else 2 if i==6 else 1,'status':1} for i in range(1,14)]);r.run()
+  self.assertEqual([t['status'] for t in r.tasks],[2]*13);self.assertEqual(r.claim_ids,list(range(1,14)))
+ def test_inferred_duplicate_stops_before_submit(self):
+  for task_id in [1,6,7,8,9,10,11]:
+   with self.subTest(task_id=task_id):
+    r=Runner(tasks=[{'id':task_id,'type':3,'status':1}]*2)
+    with self.assertRaises(Halt):r.run()
+    self.assertEqual(r.claim_ids,[])
+ def test_inferred_uncertain_stops_later_claims(self):
+  for task_id in range(6,12):
+   with self.subTest(task_id=task_id):
+    r=Runner(tasks=[{'id':i,'type':3,'status':1} for i in [task_id,12]],fault='claim_unchanged')
+    with self.assertRaises(Halt):r.run()
+    self.assertEqual(r.claim_ids,[task_id])
+ def test_all_unavailable_statuses_and_unknown_ids_skip(self):
+  for status in [0,2,3]:
+   r=Runner(tasks=[{'id':i,'type':3,'status':status} for i in range(1,14)]+[{'id':i,'type':1,'status':1} for i in [14,99]])
+   r.run();self.assertEqual(r.claim_ids,[])
+ def test_fresh_query_before_and_after_every_claim(self):
+  r=Runner(tasks=[{'id':i,'type':1,'status':1} for i in range(1,14)]);r.run()
+  for i,item in enumerate(r.trace):
+   if isinstance(item,tuple):
+    self.assertEqual(r.trace[i-1],'partnergettaskreward2611')
+    self.assertEqual(r.trace[i-2],'partnergetusertask2611')
+    self.assertEqual(r.trace[i+1],'partnergetusertask2611')
+ def test_sign_unlocks_milestone_in_same_run(self):
+  r=Runner(tasks=[{'id':7,'type':3,'status':0}],fault='sign_unlock_task');r.run()
+  self.assertEqual(r.claim_ids,[7])
+  self.assertLess(r.calls.index('partnersignin2611'),r.calls.index('partnergetusertask2611'))
+ def test_graph_integrity_and_iphone_action_allowlist(self):
+  import importlib.util
+  spec=importlib.util.spec_from_file_location('shortcut_build',P.parents[1]/'build.py')
+  build=importlib.util.module_from_spec(spec);spec.loader.exec_module(build)
+  workflow=json.loads(P.read_text());build.validate(workflow)
+  allowed={'gettext','getvalueforkey','setvariable','appendvariable','number','urlencode','text.match','count','documentpicker.open','ask','documentpicker.save','detect.dictionary','downloadurl','showresult','comment','exit','conditional','repeat.each'}
+  self.assertTrue(all(a['WFWorkflowActionIdentifier'].removeprefix('is.workflow.actions.') in allowed for a in workflow['WFWorkflowActions']))
 if __name__=='__main__':unittest.main()

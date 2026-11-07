@@ -1,4 +1,5 @@
 """Private SQLite scheduling settings and append-only execution history."""
+from contextlib import contextmanager
 import json
 import sqlite3
 from datetime import datetime, timedelta, timezone
@@ -11,6 +12,7 @@ def now():
     return datetime.now(TZ)
 
 # 每个账号目录拥有独立 SQLite。settings 保存计划，runs 保存运行记录，slot 唯一约束避免同一计划重复执行。
+@contextmanager
 def connect(root):
     db = sqlite3.connect(str(Path(root) / 'automation.sqlite3'), timeout=10)
     db.row_factory = sqlite3.Row
@@ -19,7 +21,13 @@ def connect(root):
         CREATE TABLE IF NOT EXISTS runs (id INTEGER PRIMARY KEY, slot TEXT UNIQUE, started TEXT NOT NULL,
           finished TEXT, outcome TEXT NOT NULL, details TEXT NOT NULL);
     ''')
-    return db
+    # sqlite3.Connection 的 with 只提交/回滚，不会 close。
+    # 显式关闭连接，释放文件句柄，不能依赖垃圾回收。
+    try:
+        with db:
+            yield db
+    finally:
+        db.close()
 
 # 严格校验前端提交的计划字段、分钟及 HH:MM 格式，不能直接信任网页输入。
 def validate(value):

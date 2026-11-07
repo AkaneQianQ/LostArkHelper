@@ -59,7 +59,7 @@ def save_state(path, state):
         os.close(fd)
 
 
-# 一次完整执行：先查询，筛选可领取白名单任务，每次提交前后重新核对。不同端的失败停止策略详见阅读指南。
+# 先查询并筛选启用的任务（含推断参数的 ID 6–11），仅 status=1 允许提交；每笔操作前后核对，未知结果立即停止。
 def run(helper, config, root, check_only=False, report=None, allow_sign=True, allow_claim=True):
     report = report if report is not None else {}
     report.update(sign="not_checked", claimed=[], skipped=[], message="")
@@ -72,7 +72,7 @@ def run(helper, config, root, check_only=False, report=None, allow_sign=True, al
     candidates = sorted(set(t['id'] for t in items
                             if t['status'] == 1 and t['id'] in helper.VERIFIED))
     unknown = sum(t['status'] == 1 and t['id'] not in helper.VERIFIED for t in items)
-    print('CHECK signed={} claimable={} skipped_unverified={}'.format(signed, candidates, unknown), flush=True)
+    print('CHECK signed={} claimable={} skipped_unsupported={}'.format(signed, candidates, unknown), flush=True)
     report['skipped'] = [{'id': t['id'], 'name': str(t.get('name', '未知任务'))[:100]} for t in items if t['status'] == 1 and t['id'] not in helper.VERIFIED]
     guard = Path(root) / 'pending-operation.json'
     if guard.exists():
@@ -120,6 +120,13 @@ def run(helper, config, root, check_only=False, report=None, allow_sign=True, al
                       lambda: helper.sign_status(config)):
             report['message'] = '；'.join(e['summary'] for e in report['errors'])
             return 1
+        # 签到可能使累计签到奖励刚好达标；确认签到成功后刷新候选，避免等到下次运行才领取。
+        report['stage'] = '签到后刷新任务列表'
+        items = helper.tasks(config)
+        candidates = sorted(set(t['id'] for t in items
+                                if t['status'] == 1 and t['id'] in helper.VERIFIED))
+        report['skipped'] = [{'id': t['id'], 'name': str(t.get('name', '未知任务'))[:100]}
+                             for t in items if t['status'] == 1 and t['id'] not in helper.VERIFIED]
     for tid in candidates if allow_claim else []:
         report['stage'] = '领取任务 #{} 前查询'.format(tid)
         current = [t for t in helper.tasks(config) if t['id'] == tid]

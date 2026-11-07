@@ -1,0 +1,5 @@
+.test-venv/
+.venv/
+build/
+release/
+__pycache__/

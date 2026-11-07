@@ -48,6 +48,7 @@ def main():
         return
     if not shutil.which('shortcuts'):
         raise SystemExit('Signing requires macOS shortcuts CLI. Use --unsigned-only elsewhere.')
+    (ROOT/'releases').mkdir(exist_ok=True)
     release=ROOT/'releases'/f"{workflow['WFWorkflowName']}.shortcut"
     subprocess.run(['shortcuts','sign','--mode','anyone','--input',str(unsigned),'--output',str(release)],check=True)
     print('Signed release:',release.name)

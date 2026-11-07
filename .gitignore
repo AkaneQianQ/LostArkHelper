@@ -15,3 +15,9 @@ windows/release/
 **/build/
 **/dist-rebuilt/
 windows/package/
+linux/release/
+linux/.venv/
+release-assets/
+**/*.spec
+**/credentials.enc
+**/credentials.key

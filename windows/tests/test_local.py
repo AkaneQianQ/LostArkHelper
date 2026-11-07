@@ -42,7 +42,90 @@ class LocalTests(unittest.TestCase):
 
     def test_activity(self):
         self.assertEqual(helper.VERSION, '2611')
-        self.assertEqual(set(helper.VERIFIED), {1,2,3,4,5,12,13})
+        self.assertEqual(set(helper.VERIFIED), set(range(1, 14)))
+        self.assertEqual(helper.INFERRED, frozenset(range(6, 12)))
+        self.assertTrue(all(value == 1 for value in helper.VERIFIED.values()))
+
+    def test_inferred_claims_only_claimable_unique_and_confirmed(self):
+        # 用状态机模拟官方查询，验证每个推断 ID 使用相同领取接口及 type=1。
+        class Fake:
+            SIGN_IN = helper.SIGN_IN
+            CLAIM = helper.CLAIM
+            VERIFIED = helper.VERIFIED
+            ApiError = helper.ApiError
+            claimed = []
+            @staticmethod
+            def sign_status(config): return True
+            @classmethod
+            def tasks(cls, config):
+                return ([{'id': tid, 'status': 2 if tid in cls.claimed else 1, 'name': 'inferred'}
+                         for tid in range(6, 12)] +
+                        [{'id': 1, 'status': 0}, {'id': 2, 'status': 2},
+                         {'id': 12, 'status': 1}, {'id': 12, 'status': 1},
+                         {'id': 99, 'status': 1}])
+            @classmethod
+            def request(cls, config, endpoint, form):
+                assert endpoint == helper.CLAIM
+                assert form['type'] == '1'
+                cls.claimed.append(int(form['task_id']))
+        report = {}
+        self.assertEqual(automation.run(Fake, {}, self.root, report=report), 0)
+        self.assertEqual(Fake.claimed, list(range(6, 12)))
+        self.assertEqual([item['id'] for item in report['claimed']], list(range(6, 12)))
+        self.assertEqual([item['id'] for item in report['skipped']], [99])
+        self.assertFalse((self.root / 'pending-operation.json').exists())
+
+    def test_inferred_failure_stops_and_requires_confirmation(self):
+        class Fake:
+            SIGN_IN = helper.SIGN_IN
+            CLAIM = helper.CLAIM
+            VERIFIED = helper.VERIFIED
+            ApiError = helper.ApiError
+            calls = []
+            @staticmethod
+            def sign_status(config): return True
+            @staticmethod
+            def tasks(config):
+                return [{'id': 6, 'status': 1}, {'id': 7, 'status': 1}]
+            @classmethod
+            def request(cls, config, endpoint, form):
+                cls.calls.append(form)
+                raise helper.ApiError('模拟请求超时', 'timeout')
+        self.assertEqual(automation.run(Fake, {}, self.root), 1)
+        self.assertEqual(Fake.calls, [{'task_id': '6', 'type': '1'}])
+        with self.assertRaises(helper.ApiError):
+            automation.run(Fake, {}, self.root)
+        self.assertEqual(len(Fake.calls), 1)
+
+    def test_sign_refresh_unlocks_same_run_cumulative_reward(self):
+        class Fake:
+            SIGN_IN = helper.SIGN_IN
+            CLAIM = helper.CLAIM
+            VERIFIED = helper.VERIFIED
+            ApiError = helper.ApiError
+            signed = False
+            claimed = False
+            calls = []
+            @classmethod
+            def sign_status(cls, config): return cls.signed
+            @classmethod
+            def tasks(cls, config):
+                return [{'id': 7, 'name': '累计签到7天',
+                         'status': 2 if cls.claimed else (1 if cls.signed else 0)}]
+            @classmethod
+            def request(cls, config, endpoint, form=None):
+                cls.calls.append((endpoint, form))
+                if endpoint == cls.SIGN_IN:
+                    cls.signed = True
+                elif endpoint == cls.CLAIM:
+                    cls.claimed = True
+        report = {}
+        self.assertEqual(automation.run(Fake, {}, self.root, report=report), 0)
+        self.assertEqual(Fake.calls, [(helper.SIGN_IN, None),
+                                    (helper.CLAIM, {'task_id': '7', 'type': '1'})])
+        self.assertEqual(report['sign'], 'signed_now')
+        self.assertEqual([item['id'] for item in report['claimed']], [7])
+        self.assertFalse((self.root / 'pending-operation.json').exists())
 
     def test_process_lock(self):
         a, b = automation.OperationLock(self.root), automation.OperationLock(self.root)

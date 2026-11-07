@@ -91,7 +91,7 @@ def main():
         worker.start()
         print('命运方舟助手已启动：http://127.0.0.1:{}'.format(app.PORT), flush=True)
         print('数据目录：{}'.format(root), flush=True)
-        print('保持此窗口运行。关闭网页不会停止服务；按 Ctrl+C 安全退出。', flush=True)
+        print('服务在后台运行；关闭网页不会停止。请在工作台的启动设置中安全停止服务。', flush=True)
         print('定时计划按北京时间执行；休眠/关机时无法执行，恢复后仅合并最近一次计划。', flush=True)
         if not args.no_browser:
             webbrowser.open('http://127.0.0.1:{}/open?key={}'.format(app.PORT, app.LOCAL_TOKEN))

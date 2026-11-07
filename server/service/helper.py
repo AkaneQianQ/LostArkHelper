@@ -21,7 +21,11 @@ LIST = 'partnergetusertask' + VERSION
 CLAIM = 'partnergettaskreward' + VERSION
 SIGN_LIST = 'partnersignlist' + VERSION
 SIGN_IN = 'partnersignin' + VERSION
+# 兼容字段名：此映射是支持列表，不表示所有任务均有成功抓包证据。
 VERIFIED = {int(key): value for key, value in ACTIVITY['verified_claims'].items()}
+INFERRED = frozenset(ACTIVITY.get('inferred_task_ids', []))
+if not INFERRED <= VERIFIED.keys():
+    raise ValueError('Inferred tasks must be supported')
 if any(key <= 0 or type(value) is not int or value != 1 for key, value in VERIFIED.items()):
     raise ValueError('Invalid verified claim mapping')
 TYPES = {1: '每日', 2: '每周', 3: '活动'}
@@ -154,9 +158,9 @@ def main():
         candidates = [t for t in items if t['status'] == 1 and t['id'] in VERIFIED]
         unknown = [t for t in items if t['status'] == 1 and t['id'] not in VERIFIED]
         if unknown:
-            print('\n有可领取但尚未验证领取参数的任务，已跳过：' + ', '.join(str(t['id']) for t in unknown))
+            print('\n有可领取但未收录领取参数的任务，已跳过：' + ', '.join(str(t['id']) for t in unknown))
         if not candidates:
-            print('没有可领取的已验证任务。')
+            print('没有可领取的已支持任务。')
             return 0
         for candidate in candidates:
             # Refresh before every mutation, ensuring it remains claimable.
@@ -173,7 +177,7 @@ def main():
                 return 1
             try:
                 after = [t for t in tasks(config) if t['id'] == tid]
-                if len(after) != 1 or after[0]['status'] == 1:
+                if len(after) != 1 or after[0]['status'] != 2:
                     print(f'ID={tid} 接口报告成功，但状态未确认；停止，请在 App 中检查。', file=sys.stderr)
                     return 1
                 print(f"ID={tid} 接口报告成功，领取后状态={after[0]['status']}。")

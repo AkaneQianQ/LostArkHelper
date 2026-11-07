@@ -56,7 +56,7 @@ def save_state(path, state):
         os.close(fd)
 
 
-# 一次完整执行：先查询，筛选可领取白名单任务，每次提交前后重新核对。不同端的失败停止策略详见阅读指南。
+# 一次完整执行：先查询，筛选可领取白名单任务，每次提交前后重新核对。结果未知立即停止，并用待确认记录阻止下次盲目重试。
 def run(helper, config, root, check_only=False, report=None, allow_sign=True, allow_claim=True):
     report = report if report is not None else {}
     report.update(sign="not_checked", claimed=[], skipped=[], message="")
@@ -69,8 +69,18 @@ def run(helper, config, root, check_only=False, report=None, allow_sign=True, al
     candidates = sorted(set(t['id'] for t in items
                             if t['status'] == 1 and t['id'] in helper.VERIFIED))
     unknown = sum(t['status'] == 1 and t['id'] not in helper.VERIFIED for t in items)
-    print('CHECK signed={} claimable={} skipped_unverified={}'.format(signed, candidates, unknown), flush=True)
+    print('CHECK signed={} claimable={} skipped_unsupported={}'.format(signed, candidates, unknown), flush=True)
     report['skipped'] = [{'id': t['id'], 'name': str(t.get('name', '未知任务'))[:100]} for t in items if t['status'] == 1 and t['id'] not in helper.VERIFIED]
+    guard = Path(root) / 'pending-operation.json'
+    if guard.exists():
+        pending = json.loads(guard.read_text(encoding='utf-8'))
+        action = pending.get('action')
+        matched = [t for t in items if t['id'] == action]
+        confirmed = signed if action == 'sign' else len(matched) == 1 and matched[0]['status'] == 2
+        if confirmed:
+            guard.unlink()
+        else:
+            raise helper.ApiError('上次提交的结果仍未确认，已禁止继续提交。请在官方 App 核实，并在暂停该账号计划并联系管理员核实待确认记录。', 'unconfirmed')
     if check_only:
         return 0
 
@@ -80,6 +90,7 @@ def run(helper, config, root, check_only=False, report=None, allow_sign=True, al
         report['stage'] = label + '提交'
         if report.get('run_id'):
             store.update(root, report['run_id'], report)
+        save_state(guard, {'action': action, 'started': store.now().isoformat()})
         try:
             send()
             report['stage'] = label + '结果确认'
@@ -89,7 +100,8 @@ def run(helper, config, root, check_only=False, report=None, allow_sign=True, al
             report['errors'].append(error_info(exc, report['stage']))
             if action == 'sign':
                 report['sign'] = 'failed'
-            return
+            return False
+        guard.unlink()
         if action == 'sign':
             report['sign'] = 'signed_now'
         else:
@@ -98,10 +110,17 @@ def run(helper, config, root, check_only=False, report=None, allow_sign=True, al
         if report.get('run_id'):
             store.update(root, report['run_id'], report)
         print('CONFIRMED {}'.format(action), flush=True)
+        return True
 
     if not signed and allow_sign:
-        mutate('sign', lambda: helper.request(config, helper.SIGN_IN),
-               lambda: helper.sign_status(config))
+        if not mutate('sign', lambda: helper.request(config, helper.SIGN_IN),
+                      lambda: helper.sign_status(config)):
+            report['message'] = '；'.join(e['summary'] for e in report['errors'])
+            return 1
+        # 本次签到可能刚好解锁累计签到奖励，刷新后再筛选候选。
+        items = helper.tasks(config)
+        candidates = sorted(set(t['id'] for t in items
+                                if t['status'] == 1 and t['id'] in helper.VERIFIED))
     for tid in candidates if allow_claim else []:
         report['stage'] = '领取任务 #{} 前查询'.format(tid)
         current = [t for t in helper.tasks(config) if t['id'] == tid]
@@ -110,8 +129,9 @@ def run(helper, config, root, check_only=False, report=None, allow_sign=True, al
         def confirmed():
             after = [t for t in helper.tasks(config) if t['id'] == tid]
             return len(after) == 1 and after[0]['status'] == 2
-        mutate(tid, lambda: helper.request(config, helper.CLAIM,
-               {'task_id': str(tid), 'type': str(helper.VERIFIED[tid])}), confirmed)
+        if not mutate(tid, lambda: helper.request(config, helper.CLAIM,
+               {'task_id': str(tid), 'type': str(helper.VERIFIED[tid])}), confirmed):
+            break
     report['stage'] = '执行完成'
     report['message'] = '；'.join(e['summary'] for e in report['errors'])
     return 1 if report['errors'] else 0

@@ -1,74 +1,42 @@
-# 命运方舟助手 · 三端完整源码
+# 命运方舟助手
 
-整理日期：2026-11-05。当前为可直接浏览的中文注释版目录，无需解压。
+v0.2.0，活动版本 2611。包含服务器、Windows 本地版、Linux 本地版及 iPhone 单快捷指令。Windows/Linux 解压即可运行，无需安装 Python，也无需注册助手账号；服务器版保留多用户登录和独立计划。
 
-第一次阅读请先打开 `docs/代码阅读指南.md`。核心 Python、前端和快捷指令已补中文注释；注释版未覆盖线上服务或现有设备副本。包含服务器当前部署版本、iPhone 单快捷指令、Windows 本地后台服务。没有附带真实账号、Cookie、token、数据库、密码、Tunnel 配置、抓包原文或截图。
+从 [GitHub Releases](https://github.com/youboRepo/LostArkHelper/releases) 下载：
 
-## 目录
+| 版本 | 下载文件 | 使用方式 |
+| --- | --- | --- |
+| Windows x64 | LostArkHelper-Windows-x64-v0.2.0.zip | 完整解压，双击目录中的 LostArkHelper.exe |
+| Linux x64 | LostArkHelper-Linux-x64-v0.2.0.tar.gz | 解压，运行 ./start.sh，浏览器打开工作台 |
+| 服务器 | LostArkHelper-Server-v0.2.0.tar.gz | Python 服务源码、网页成品及 systemd 单元，见包内 README |
+| iPhone | LostArkHelper-iPhone-v0.2.0.shortcut | 在 iPhone 上下载并用快捷指令 App 导入 |
 
-- server/service：从运行中服务器取回的 Python 后端及活动配置。
-- server/web：React/Vite 前端源码，已清理未引用的模板演示页面。
-- server/dist：从服务器取回的已部署网页。
-- server/deploy：后台、定时执行器的 systemd 单元。
-- windows：0.1.2 本地后台服务源码、网页、测试和 Windows 构建脚本。
-- shortcuts/source/workflow.json：最新快捷指令动作图，唯一构建输入。
-- shortcuts/build.py：直接从动作图构建，不再依赖历史补丁顺序。
-- shortcuts/releases：已签名的小队任务版快捷指令。
-- shortcuts/tests：19 项模拟与结构测试。
-- shortcuts/tools/history：历史生成和补丁脚本，仅供追溯，不能作为当前构建入口。
-- activity-manifest.json / verify_activity.py：三端活动及白名单核对。
-- SHA256SUMS.txt：文件校验清单。
+Windows/Linux 服务保持后台运行；关闭网页不退出，可在工作台停止。Windows 在工作台设置用户登录自启；Linux 使用安装脚本配置 systemd 用户服务。Linux 成品在 Ubuntu 22.04 x64 构建，需要 glibc 2.35+，不适用于 Alpine/musl 或 ARM。
 
-web 保留现有界面及上游 LICENSE；未引用演示业务已移除，一些上游静态资源仍保留。无需原开发目录即可使用/重建。
+## 自动处理哪些任务
 
-## Windows
+支持任务 ID 1–13：登录游戏、星辰护卫、卡杰洛斯、影子副本、混沌地牢/库尔赞前线、极焰的沙漏、累计签到 7/14/21/28 天、首次查看规则、首次组建 4 人小队、小队登录游戏。
 
-安装 Python 3.11+ 和 py 启动器，解压后双击 windows/启动助手.vbs。后台运行并打开工作台；关闭浏览器不退出，定时设置中可停止服务或设置登录自启。旧服务先停止再升级，已有自启记录应关闭再开启。
+任务 6–11 的领取参数依据统一接口推断，尚无逐项成功抓包，不能声称已经真实领奖验证。它们与已收录任务共用 partnergettaskreward2611、task_id、type=1。只在官方返回 status=1 时领取；不会代替玩家完成副本、查看活动规则或组队条件。未知、重复、未完成或已领取任务跳过。
 
-Windows 上运行 build-windows.ps1 可构建 windowed exe，输出 release/LostArkHelper；必须分发整个目录。现已增加 GitHub Actions 的 Windows x64 单文件构建；2026-11-06 的成品运行检查已通过，见下方最新记录。详细使用以 windows/README.md 顶部 0.1.2 说明为准，下面保留了版本历史。
+签到成功后刷新任务，可在同次执行领取刚解锁的累计奖励。提交前后重新查询；异常或无法确认成功时立即停止。服务器和本地版持久保存 pending-operation.json，后续先查询确认，结果仍不明确则阻止再次提交。手机在当前执行中停止；不同端之间没有共享锁，请选择一个端为同一账号执行自动计划。
 
-数据在 %LOCALAPPDATA%\LostArkHelper，凭据由当前用户 DPAPI 加密，不随源码迁移。cmd 已采用 CRLF/GBK，默认 VBS 后台启动，调试启动.cmd 保留终端。
+## 源码与构建
 
-## 服务器
+- server/：多用户后端、React/Vite 网页、部署单元与测试。
+- windows/：Windows 本地后台服务、DPAPI 凭据存储、登录自启及原生构建。
+- linux/：Linux 独立本地服务、加密凭据、用户自启及原生构建。
+- shortcuts/：iPhone 动作图、构建签名工具、模拟与结构测试。
+- activity-manifest.json / verify_activity.py：核对四端的活动配置。
+- tools/package_release.py：生成 ZIP/tar.gz，包内附 SHA256SUMS.txt。
+- .github/workflows/release-build.yml：Windows/Linux 原生构建、单元与成品启动检查、服务器打包。
 
-建议 Python 3.11+。后端仅监听 127.0.0.1:18745，公网反向代理/Tunnel 保持在代码之外。本包不安装系统服务、不包含云端用户状态。
+各目录有中文注释和使用说明，阅读顺序见 docs/代码阅读指南.md。运行 `python3 verify_activity.py` 检查配置一致。前端未改变功能，已附网页成品；重建时在 web/ 下运行 npm ci，再运行 npm run build -- --outDir ../dist（Node 20.19+/22.12+）。
 
-deploy 单元按既有 /opt/lostark-dashboard 路径使用；新部署需自行核对目录、权限和 systemd 用户配置。环境变量 ARK_HELPER_DIR 指向私有状态目录，ARK_STATIC_DIR 指向 dist，ARK_PORT 默认 18745。现有 auth.initialize 首次初始化会从状态目录 panel.key 读取原 ark 用户密码，需在目标机本地创建随机强密码文件并限制权限，禁止提交入库。用户状态保存在 users/<服务端用户ID>/，不要从现有服务器随意复制凭据。
+iPhone 动作图唯一来源是 shortcuts/source/workflow.json。`python3 shortcuts/build.py` 在 macOS 上调用 Apple CLI 签名，生成的文件用于 iPhone；构建机器平台不代表快捷指令仅可在 Mac 使用。不要运行 tools/history 内的历史补丁。签名及模拟测试不能替代手机真机测试。
 
-网页重建（server/web 或 windows/web）：Node 20.19+/22.12+，执行 npm ci，再执行 npm run build -- --outDir ../dist。源码清理后两端均已重新构建，服务器产物资源名与线上一致。
+## 数据与验证边界
 
-## 快捷指令
+发行包不包含真实活动链接、账号、token、Cookie、数据库或抓包原文。Windows 凭据由当前用户 DPAPI 加密；Linux 使用独立用户密钥加密，密钥与密文同机保存，只能保护单独泄露密文的情形。详细数据路径和迁移方式见各端 README。
 
-```bash
-python3 shortcuts/build.py
-python3 -m unittest discover -s shortcuts/tests -v
-```
-
-签名需要 macOS 自带 shortcuts CLI。Windows/Linux 可加 --unsigned-only 生成未签名 plist，不能将其当成可导入 iPhone 的签名文件。releases 已提供签名版，首次粘贴官方活动链接，保存至 iCloud Drive/Shortcuts/lostark-local-link.txt。含真实链接的文件不要分享。
-
-修改动作图后使用统一 build.py 重新签名，不要运行 tools/history 下的旧补丁。workflow.json 就是快捷指令源码，后续新任务应同步动作图中的筛选与完整提交/确认分支。
-
-## 当前版本和维护要求
-
-活动 2611。服务器及 Windows 白名单为 1、2、3、4、5、12、13；快捷指令为 2、3、4、5、12、13。ID 1 的历史差异明确保留，不能静默放宽。领取参数均为 type=1，任务列表分类不能直接作领取参数。
-
-以后新增接口/任务必须同步服务器、本地版和快捷指令，记录抓包成功证据、前后状态和三端验证。1224 号角色详情二进制请求未接入，不在本包中保存原请求。
-
-## 验证与已知边界
-
-- 快捷指令统一构建/Apple 签名成功，19 项测试通过；新增小队任务版未在本会话完成手机全流程实测。
-- 2026-11-06：GitHub Windows Server 2022 x64 环境中 13 项测试全部通过，含真实 DPAPI 和进程锁；单文件 EXE 在移除 Python PATH 后通过启动、鉴权、网页资源、单实例和安全退出检查。个人 Windows 10/11 的默认浏览器弹出及登录自启仍待用户验收。
-- Windows 终端启动修复来自用户提供的 Windows 排查结论，不等同于全部业务测试通过。
-- 服务器后端保持线上原样。发现现有 automation 在某个提交报错后仍可能继续后续候选，未在这次打包中静默修改云端；Windows 版已改为立即停止并持久化待确认状态。后续应单独修复并部署服务器这一差异。
-- 三端未共享运行时锁，避免多个端同时自动操作同一账号。
-- 不含实际账号数据，测试没有触发真实签到/领奖。
-
-## Windows 单文件 EXE（2026-11-06）
-
-GitHub Actions → Build Windows EXE → Run workflow 可重新构建。默认 onefile + windowed，最终用户只需 LostArkHelper.exe，不需要 Python。构建脚本仍支持 -Mode onedir 以便排查打包问题。
-
-构建代码提交：5e44439。已通过的构建与成品检查：https://github.com/youboRepo/LostArkHelper/actions/runs/42238450932 。Actions 产物默认保留 30 天，过期后可重建。
-
-本轮 Windows 测试发现 SQLite 的 with 语句只提交/回滚、不关闭连接，已在本地版 store.connect 中显式关闭，并加入事务成功/异常都关闭的测试。未修改服务器代码。
-
-查看 windows/EXE使用说明.md。升级前先停止旧服务；同一个 Windows 用户下数据目录保持不变。二进制无商业代码签名，不含真实账号和游戏凭据，检查未执行真实游戏操作。
+自动测试不调用真实游戏接口；Windows/Linux 在对应 GitHub 原生环境测试冻结成品的启动、网页、鉴权、单实例及停止。个人设备的浏览器唤起、自启和 iPhone 全流程需设备验收。推断任务实际可领与否仍以活动官方响应为准。1224 号二进制角色详情请求未接入。

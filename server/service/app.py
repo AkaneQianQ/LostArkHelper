@@ -17,7 +17,7 @@ import import_link as importer
 ROOT = Path(os.environ.get('ARK_HELPER_DIR', '/var/lib/ark-dashboard'))
 STATIC = Path(os.environ.get('ARK_STATIC_DIR', '/opt/lostark-dashboard/dist'))
 PORT = int(os.environ.get('ARK_PORT', '18745'))
-PUBLIC_ORIGIN = 'https://lostarkhelper.dpdns.org'
+PUBLIC_ORIGIN = os.environ.get('ARK_PUBLIC_ORIGIN', 'https://lostarkhelper.dpdns.org').rstrip('/')
 COOKIE = 'ark_session'
 
 # 读取当前账号的游戏凭据；只供后端内部调用，不能把返回值直接输出到网页或日志。
