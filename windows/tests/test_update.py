@@ -153,9 +153,12 @@ class UpdateTests(unittest.TestCase):
         executable.write_bytes(b'old executable')
         data_root.joinpath('update-download.json').write_text(json.dumps({'name': 'LostArkHelper-Windows-x64-v0.3.0.zip'}))
         data_root.joinpath('update-download.bin').write_bytes(b'not an archive')
-        with patch.object(sys, 'frozen', True, create=True), patch.object(updater, 'current_version', return_value='v0.2.0'), patch.object(update_worker.subprocess, 'Popen') as launch:
+        with patch.object(sys, 'frozen', True, create=True), patch.object(updater, 'current_version', return_value='v0.2.0'), \
+                patch.object(updater, 'apply_downloaded', side_effect=ValueError('bad archive')) as apply, \
+                patch.object(update_worker.subprocess, 'Popen') as launch:
             self.assertEqual(update_worker.install(data_root, program_root, executable), 1)
             self.assertEqual(Path(launch.call_args.args[0][0]), executable.resolve())
+            self.assertEqual(apply.call_args.kwargs['installed_version'], 'v0.2.0')
 
     def test_pending_game_operation_blocks_update_before_download(self):
         app.ROOT = self.root

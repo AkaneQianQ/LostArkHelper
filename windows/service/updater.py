@@ -216,7 +216,7 @@ def prepare(tag):
     return data, asset_name
 
 
-def apply_downloaded(archive, asset_name, root, executable):
+def apply_downloaded(archive, asset_name, root, executable, installed_version=None):
     # 外部 worker 在旧服务完全退出后才调用此函数，避免替换正在运行的文件。
     if asset_name.endswith('.zip'):
         files, (top, version) = read_zip(io.BytesIO(archive))
@@ -225,8 +225,8 @@ def apply_downloaded(archive, asset_name, root, executable):
     else:
         files, (top, version), modes = read_tar(io.BytesIO(archive))
         expected_name = 'LostArkHelper'
-    current = current_version()
-    if not supported() or version_tuple(version) <= version_tuple(current):
+    current = installed_version or current_version()
+    if not getattr(sys, 'frozen', False) or not current or version_tuple(version) <= version_tuple(current):
         raise ValueError('更新包版本 {} 无效或低于当前版本 {}'.format(version, current or '未知'))
     if asset_name != f'LostArkHelper-{platform_name()}-{version}.' + ('zip' if platform_name() == 'Windows-x64' else 'tar.gz'):
         raise ValueError('更新包名称与版本不一致')

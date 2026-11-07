@@ -16,6 +16,7 @@ cp "$PWD/../VERSION" "$PWD/VERSION"
 PACKAGE=release/LostArkHelper-Linux-x64
 mkdir -p "$PACKAGE"
 cp build/bin/LostArkHelper "$PACKAGE/LostArkHelper"
+cp "$PWD/../VERSION" "$PACKAGE/VERSION"
 cp start.sh stop.sh open-workbench.sh install-user-service.sh README.md "$PACKAGE/"
 chmod 755 "$PACKAGE/LostArkHelper" "$PACKAGE/"*.sh
 "$PYTHON" tests/smoke_frozen.py --exe "$PACKAGE/LostArkHelper"
