@@ -37,11 +37,20 @@ def platform_name():
 
 
 def current_version():
-    resource = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent)) / 'VERSION'
-    try:
-        return resource.read_text(encoding='ascii').strip()
-    except OSError:
-        return ''
+    candidates = []
+    if getattr(sys, 'frozen', False):
+        # 发行目录中的 VERSION 必须优先；单文件程序内部可能仍带有旧版本号。
+        candidates.append(Path(sys.executable).resolve().parent / 'VERSION')
+    if getattr(sys, '_MEIPASS', None):
+        candidates.append(Path(sys._MEIPASS) / 'VERSION')
+    if not candidates:
+        candidates.append(Path(__file__).resolve().parent / 'VERSION')
+    for resource in candidates:
+        try:
+            return resource.read_text(encoding='ascii').strip()
+        except OSError:
+            pass
+    return ''
 
 
 def normalized_path(path):
@@ -90,11 +99,15 @@ def verify_members(files):
     for name in (checksums_name, version_name):
         if name not in files:
             raise ValueError('发行包缺少版本或校验清单')
+    listed = set()
     for line in files[checksums_name].decode('utf-8').splitlines():
         digest, relative = line.split('  ', 1)
         filename = root_name + '/' + relative
-        if filename not in files or hashlib.sha256(files[filename]).hexdigest() != digest:
+        if not re.fullmatch(r'[0-9a-f]{64}', digest) or filename in listed or filename not in files or hashlib.sha256(files[filename]).hexdigest() != digest:
             raise ValueError('发行包内文件校验失败')
+        listed.add(filename)
+    if listed != set(files) - {checksums_name}:
+        raise ValueError('发行包存在未列入校验清单的文件')
     return root_name, files[version_name].decode('ascii').strip()
 
 

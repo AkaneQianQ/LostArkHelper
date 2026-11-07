@@ -19,9 +19,13 @@ import update_worker
 def archive_bytes(version='v0.3.0', windows=True, valid=True):
     root = f'LostArkHelper-{"Windows-x64" if windows else "Linux-x64"}-{version}'
     executable = 'LostArkHelper.exe' if windows else 'LostArkHelper'
-    files = {executable: b'new executable', 'README.md': b'new version'}
+    files = {
+        executable: b'new executable',
+        'README.md': b'new version',
+        'VERSION': (version + '\n').encode(),
+    }
     checks = ''.join(hashlib.sha256(data).hexdigest()+'  '+name+'\n' for name, data in files.items())
-    files.update({'SHA256SUMS.txt': checks.encode(), 'VERSION': (version+'\n').encode()})
+    files['SHA256SUMS.txt'] = checks.encode()
     if not valid:
         files[executable] = b'changed'
     stream = io.BytesIO()
@@ -51,6 +55,19 @@ class UpdateTests(unittest.TestCase):
         self.root.joinpath('VERSION').write_text('v0.2.0\n')
         with patch.object(sys, '_MEIPASS', str(self.root), create=True):
             self.assertEqual(updater.current_version(), 'v0.2.0')
+
+    def test_frozen_version_prefers_file_next_to_executable(self):
+        install = self.root / 'install'
+        bundle = self.root / 'bundle'
+        install.mkdir()
+        bundle.mkdir()
+        executable = install / 'LostArkHelper.exe'
+        executable.write_bytes(b'executable')
+        install.joinpath('VERSION').write_text('v0.3.0\n')
+        bundle.joinpath('VERSION').write_text('v0.2.0\n')
+        with patch.object(sys, 'frozen', True, create=True), patch.object(sys, 'executable', str(executable)), \
+                patch.object(sys, '_MEIPASS', str(bundle), create=True):
+            self.assertEqual(updater.current_version(), 'v0.3.0')
 
     def test_new_version_comparison(self):
         with patch.object(updater, 'current_version', return_value='v0.9.9'):
@@ -87,6 +104,7 @@ class UpdateTests(unittest.TestCase):
             launch.assert_not_called()
         self.assertEqual(executable.read_bytes(), b'old executable')
 
+    @unittest.skipIf(os.name == 'nt', 'POSIX archive paths are tested by Linux CI')
     def test_linux_archive_and_normalized_executable_path(self):
         root = self.root / 'install'
         root.mkdir()
