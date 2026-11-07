@@ -53,7 +53,7 @@ def install(data_root, program_root, executable):
                 subprocess.Popen([str(executable), '--no-browser'], stdin=subprocess.DEVNULL,
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                  creationflags=getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0) | getattr(subprocess, 'DETACHED_PROCESS', 0),
-                                 close_fds=True)
+                                 close_fds=True, env=updater.clean_environment())
                 raise
         finally:
             lock.release()

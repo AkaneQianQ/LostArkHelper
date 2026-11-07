@@ -58,6 +58,11 @@ def normalized_path(path):
     return os.path.normcase(os.path.normpath(str(path)))
 
 
+def clean_environment():
+    # PyInstaller 用 _PYI_* 标记共享的单文件解包目录；旧服务退出后该目录会消失。
+    return {key: value for key, value in os.environ.items() if not key.startswith('_PYI_')}
+
+
 def supported():
     return bool(getattr(sys, 'frozen', False)) and bool(current_version())
 
@@ -259,12 +264,13 @@ def apply_downloaded(archive, asset_name, root, executable, installed_version=No
     if os.name != 'nt':
         subprocess.Popen([str(root / 'LostArkHelper'), '--no-browser'],
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL, start_new_session=True)
+                         stderr=subprocess.DEVNULL, start_new_session=True,
+                         env=clean_environment())
     else:
         subprocess.Popen([str(root / 'LostArkHelper.exe'), '--no-browser'],
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS,
-                         close_fds=True)
+                         close_fds=True, env=clean_environment())
     print('Update installed. Previous folder retained for recovery.', flush=True)
     return 0
 
@@ -328,7 +334,7 @@ def worker():
                          stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL,
                          creationflags=getattr(subprocess, 'CREATE_NEW_PROCESS_GROUP', 0) | getattr(subprocess, 'DETACHED_PROCESS', 0),
-                         close_fds=True)
+                         close_fds=True, env=clean_environment())
         with LOCK:
             STATE['status'] = 'restarting'
         # 在独立非后台线程中等待退出；下载函数可正常释放并结束，避免测试线程悬挂。

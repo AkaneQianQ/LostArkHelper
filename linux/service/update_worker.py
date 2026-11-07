@@ -51,7 +51,7 @@ def install(data_root, program_root, executable):
                 print('Installation failed; restarting previous version.', flush=True)
                 subprocess.Popen([str(executable), '--no-browser'], stdin=subprocess.DEVNULL,
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                                 start_new_session=True)
+                                 start_new_session=True, env=updater.clean_environment())
                 raise
         finally:
             lock.release()

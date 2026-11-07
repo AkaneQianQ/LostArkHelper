@@ -76,6 +76,17 @@ class UpdateTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     updater.version_tuple(invalid)
 
+    def test_detached_process_clears_pyinstaller_environment(self):
+        with patch.dict(os.environ, {
+                '_PYI_ARCHIVE_FILE': '/old/program',
+                '_PYI_APPLICATION_HOME_DIR': '/old/extract',
+                'ARK_KEEP_ME': 'yes'}), \
+                patch.object(sys, 'frozen', True, create=True):
+            environment = updater.clean_environment()
+        self.assertNotIn('_PYI_ARCHIVE_FILE', environment)
+        self.assertNotIn('_PYI_APPLICATION_HOME_DIR', environment)
+        self.assertEqual(environment['ARK_KEEP_ME'], 'yes')
+
     def test_corrupt_or_unlisted_file_never_replaces_old(self):
         root = self.root/'install'
         root.mkdir()
