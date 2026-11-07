@@ -19,7 +19,7 @@ def main():
         try:
             return install(root, executable)
         except Exception as exc:
-            print('更新失败：{} {}'.format(type(exc).__name__, str(exc)[:300]), flush=True)
+            print('Update failed: {} {}'.format(type(exc).__name__, str(exc)[:300]), flush=True)
             return 1
 
 
@@ -32,7 +32,7 @@ def install(root, executable):
                 break
             time.sleep(0.5)
         else:
-            print('旧服务未正常退出，已取消更新；旧版本保留。', flush=True)
+            print('Old service did not exit; update cancelled.', flush=True)
             return 1
         lock = updater.InstallLock(root)
         if not lock.acquire():
@@ -43,7 +43,7 @@ def install(root, executable):
             try:
                 updater.apply_downloaded(archive, metadata['name'], root, executable)
             except Exception:
-                print('更新安装失败，正在恢复原版本。', flush=True)
+                print('Installation failed; restarting previous version.', flush=True)
                 subprocess.Popen([str(executable), '--no-browser'], stdin=subprocess.DEVNULL,
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                  start_new_session=True)
@@ -54,7 +54,7 @@ def install(root, executable):
                 root.joinpath(name).unlink(missing_ok=True)
         return 0
     except Exception as exc:
-        print('更新失败：{} {}'.format(type(exc).__name__, str(exc)[:300]), flush=True)
+        print('Update failed: {} {}'.format(type(exc).__name__, str(exc)[:300]), flush=True)
         return 1
 
 
