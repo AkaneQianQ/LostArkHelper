@@ -87,6 +87,19 @@ class UpdateTests(unittest.TestCase):
             launch.assert_not_called()
         self.assertEqual(executable.read_bytes(), b'old executable')
 
+    def test_linux_archive_and_normalized_executable_path(self):
+        root = self.root / 'install'
+        root.mkdir()
+        executable = root / 'LostArkHelper'
+        executable.write_bytes(b'old executable')
+        with patch.object(updater, 'platform_name', return_value='Linux-x64'), patch.object(updater.os, 'name', 'posix'), \
+                patch.object(sys, 'frozen', True, create=True), patch.object(updater, 'current_version', return_value='v0.2.0'), \
+                patch.object(updater.subprocess, 'Popen') as launch:
+            updater.apply_downloaded(archive_bytes(windows=False), 'LostArkHelper-Linux-x64-v0.3.0.tar.gz', root, root / '.' / 'LostArkHelper')
+        self.assertEqual(executable.read_bytes(), b'new executable')
+        self.assertTrue(os.access(executable, os.X_OK))
+        launch.assert_called_once()
+
     @unittest.skipUnless(os.name == 'nt', 'Requires Windows executable replacement')
     def test_windows_replacement_keeps_backup_and_launches_new(self):
         root = self.root/'install'

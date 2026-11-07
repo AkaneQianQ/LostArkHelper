@@ -44,6 +44,10 @@ def current_version():
         return ''
 
 
+def normalized_path(path):
+    return os.path.normcase(os.path.normpath(str(path)))
+
+
 def supported():
     return bool(getattr(sys, 'frozen', False)) and bool(current_version())
 
@@ -105,7 +109,7 @@ def read_zip(archive):
 
 
 def read_tar(archive):
-    with tarfile.open(archive, 'r:gz') as source:
+    with tarfile.open(fileobj=archive, mode='r:gz') as source:
         members = source.getmembers()
         if any(not (m.isfile() or m.isdir()) for m in members):
             raise ValueError('发行包只允许普通文件和目录')
@@ -215,7 +219,7 @@ def apply_downloaded(archive, asset_name, root, executable):
     executable = Path(executable).resolve()
     if root == root.parent:
         raise ValueError('不能更新文件系统根目录')
-    if executable.parent != root or executable.name != expected_name:
+    if normalized_path(executable) != normalized_path(root / expected_name):
         raise ValueError('只允许更新当前发行目录')
     target = root.parent / (root.name + '.updating')
     backup = root.parent / (root.name + '.previous')
