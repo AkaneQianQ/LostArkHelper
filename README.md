@@ -2,6 +2,8 @@
 
 v0.3.1，活动版本 2611。包含服务器、Windows 本地版、Linux 本地版及 iPhone 单快捷指令。Windows/Linux 解压即可运行，无需安装 Python，也无需注册助手账号；服务器版保留多用户登录和独立计划。
 
+完整操作说明见：[命运方舟助手四端使用指南](docs/使用指南.md)。其中包含四端选择、活动链接导入、定时设置、数据位置、更新和安全排查。
+
 从 [GitHub Releases](https://github.com/youboRepo/LostArkHelper/releases) 下载：
 
 | 版本 | 下载文件 | 使用方式 |

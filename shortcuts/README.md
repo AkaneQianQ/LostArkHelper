@@ -1,6 +1,6 @@
 # iPhone 一键签到领奖
 
-发布文件为 `releases/LostArkHelper-iPhone-v0.2.0.shortcut`。这是 iPhone「快捷指令」使用的单个指令，运行过程直接访问官方活动接口，不依赖服务器、Windows 或其他快捷指令。使用 macOS 的 `shortcuts sign` 仅为生成苹果签名，不代表需要在 Mac 上运行。
+发布文件为 `releases/LostArkHelper-iPhone-v0.3.1.shortcut`。这是 iPhone「快捷指令」使用的单个指令，运行过程直接访问官方活动接口，不依赖服务器、Windows 或其他快捷指令。使用 macOS 的 `shortcuts sign` 仅为生成苹果签名，不代表需要在 Mac 上运行。
 
 ## 使用
 
